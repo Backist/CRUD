@@ -1,0 +1,14 @@
+[2022-07-12 13:07:33][INFO] - | Alvaro (["8/x::/Tx-tb9z'cPI*G€l"]) | -> Se ha habilitado la entrada de datos
+[2022-07-12 13:07:35][INFO] - | Alvaro (["8/x::T/jeWQpYIw's4S&="]) | -> Se ha habilitado la entrada de datos
+[2022-07-12 14:32:27][INFO] - | Alvaro (['8/x::SCPw@exfJA9DlW&Z']) | -> Se ha habilitado la entrada de datos
+[2022-07-12 14:32:41][INFO] - | Alvaro (['8/x::QxdBSñ#b/fsYMPWw']) | -> Se ha habilitado la entrada de datos
+[2022-07-12 14:32:43][INFO] - | Alvaro (['8/x::ñx@qRsJBKkt1Ijw3']) | -> Se ha habilitado la entrada de datos
+[2022-07-12 14:32:43][INFO] - | Alvaro (['8/x::axOXgMwZyf2hSt53']) | -> Se ha habilitado la entrada de datos
+[2022-07-12 14:32:44][INFO] - | Alvaro (['8/x::ÑCwT*b5=zOUg3Aoj']) | -> Se ha habilitado la entrada de datos
+[2022-07-12 14:32:45][INFO] - | Alvaro (["8/x::izX'6GZY5fmRL7F4"]) | -> Se ha habilitado la entrada de datos
+[2022-07-12 14:32:45][INFO] - | Alvaro (["8/x::o2uJ€RXLd'B0ayj&"]) | -> Se ha habilitado la entrada de datos
+[2022-07-12 14:32:45][INFO] - | Alvaro (['8/x::c6k=ML#ÑTus90G*S']) | -> Se ha habilitado la entrada de datos
+[2022-07-12 14:34:26][INFO] - | Alvaro (['8/x::QMs=wñarÑ-Lfgz/U']) | -> Se ha habilitado la entrada de datos
+[2022-07-12 14:34:27][INFO] - | Alvaro (["8/x::xabz'€D/6pPJ@H1j"]) | -> Se ha habilitado la entrada de datos
+[2022-07-12 14:34:28][INFO] - | Alvaro (['8/x::DIxGc&6Ñq92ñmwe5']) | -> Se ha habilitado la entrada de datos
+[2022-07-12 14:35:25][INFO] - | Alvaro (['8/x::is€ÑYc3oKdBCtA@/']) | -> Se ha habilitado la entrada de datos

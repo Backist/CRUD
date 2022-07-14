@@ -15,8 +15,6 @@ from random import choice, randint, sample
 from threading import Thread
 
 
-
-
 __all__: list[str] = ["User", "cFormatter", "Database"]     
 #TODO: Solo se importaran esos modulos o clases pero los metodos o funciones privados no seran importados
 
@@ -104,9 +102,11 @@ class User:
 
         if self._ids_range:
             if self._ids_range[0] > self._ids_range[1] or self._ids_range[1]-self._ids_range[0] < 50:
-                return User.UserError(cFormatter("El primer indice debe ser el término mas pequeño del intervalo o deben de tener mas distacia entre ellos. E.g [1, 10]", color= Fore.RED))
+                print(cFormatter("El primer indice debe ser el término mas pequeño del intervalo o deben de tener mas distacia entre ellos. E.g [1, 10]", color= Fore.RED))
+                return User.UserError()
             elif len(self._ids_range) > 2:
-                return User.UserError(cFormatter("El intervalo debe ser entre un máximo de 2 numeros comprendidos. E.g [1, 10]", color= Fore.RED))
+                print(cFormatter("El intervalo debe ser entre un máximo de 2 numeros comprendidos. E.g [1, 10]", color= Fore.RED))
+                return User.UserError()
             else:
                 avariable_ids = list(range(self._ids_range[0], self._ids_range[1]+1))
                 self._identifier = avariable_ids.pop(randint(0, len(avariable_ids)))
@@ -137,7 +137,6 @@ class User:
                 #? datetime.datetime.now()
 
 
-
 class Database:
     """
     Instancia un objeto de clase Database. Es decir, el objeto actua como base de datos.
@@ -152,7 +151,6 @@ class Database:
         Clases para manejar los errores u excepciones de la clase Database.
         """
         pass
-
 
     class Clock:
 
@@ -199,8 +197,11 @@ class Database:
 
         def activeTimer(self):
             """Activa el cronometro si esta pausado.\nTambien lo hace si esta parado pero es mejor utilizar el metodo ``.timer()``"""
-            self._active = True
-            return self._calc_passed_time_format()
+            if self.active:
+                pass
+            else:
+                self._active = True
+                return self._calc_passed_time_format()
 
         def resetTimer(self):
             if self._active:
@@ -208,7 +209,6 @@ class Database:
                 print(cFormatter("El cronometro se ha reseteado", color= Fore.GREEN))
             else:
                 return self.ClockError(self.ClockErrorMsg)
-
 
     def __cls__(self):
         if os.name == "nt":
@@ -225,7 +225,7 @@ class Database:
             raise Database.DatabaseInitializationError(cFormatter("El archivo de log no existe o no es valido (Probablemente no sea un archivo)", color= Fore.RED))
         self.EntryDataEnabled: bool = None
         self.Running: bool = False
-        #self.CheckEntryDataEnabled()       #* Comprobamos si se pueden introducir datos en la base de datos
+        self.CheckEntryDataEnabled()       #* Comprobamos si se pueden introducir datos en la base de datos
         #self.LogChecker()                   #* Despues verificamos si el archivo de log existe y es valido y demas configuraciones
 
     @property
@@ -381,6 +381,12 @@ class Database:
         print(cFormatter(f"Base de datos temporal inicializada en {self.TempDbWakeTime} ms", color=Fore.GREEN))
         return self.conn
 
+    def _CloseTempDb(self) -> None:
+        """Cierra la base de datos temporal y guarda los cambios realizados"""
+        self.conn.commit()
+        self.conn.close()
+        print(cFormatter("Base de datos temporal cerrada y con exito.", color=Fore.GREEN))
+
 
     def CheckEntryDataEnabled(self) -> bool:
         
@@ -391,15 +397,17 @@ class Database:
             if self.userToken in active_users:
                 self.EntryDataEnabled = True
                 self._LogWritter(f"Se ha habilitado la entrada de datos", self.user.username, special_info= [self.user.token])
+            elif self.userToken not in active_users and self.user.username in active_users:
+                print(cFormatter("Se ha encontrado un usuario activo con el mismo nombre de usuario pero con un token diferente", color=Fore.YELLOW))
+                self.EntryDataEnabled = True
+                self._LogWritter(f"Se ha habilitado la entrada de datos", self.user.username, special_info= [self.user.token])
             else:
                 temp_db.execute("INSERT INTO users (Username, Email, Password, Token, Created_at) VALUES (?, ?, ?, ?, ?)", (self.user.username, self.user.email, self.user.password, self.user.token, self.user.created_at))
                 print(cFormatter(f"Se ha añadido al usuario {self.user.username} con ID [{self.user.UId}] a usuarios permitidos", color= Fore.GREEN))
             return self.EntryDataEnabled
         else:
             self.EntryDataEnabled = False
-            print(AttributeError(f"El usuario {self.user.username} no posee un token asignado para acceder a la base de datos. Use ``Datbase.CreateToken`` para asignar un token unico al usuario."))
-        temp_db.commit()
-        temp_db.close()
+            print(cFormatter(f"El usuario {self.user.username} no posee un token asignado para acceder a la base de datos. Use ``Database.CreateToken()`` para asignar un token unico al usuario.", color= Fore.YELLOW))
 
     def _InitInternalTables(self):
         """

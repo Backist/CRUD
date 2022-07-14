@@ -4,7 +4,6 @@ from colorama import Fore, Back, Style #, init
 from random import randint, choice
 
 
-
 def cFormatter(
     string: str, 
     color: Fore, 
@@ -51,9 +50,6 @@ def cFormatter(
                 return f"{color}{style}{string}{Fore.RESET}{Style.RESET_ALL}"
             else:
                 return f"{color}{string}{Fore.RESET}"
-
-
-
 
 
 class Furniture:

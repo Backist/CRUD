@@ -66,6 +66,12 @@ def cFormatter(
             else:
                 return f"{color}{string}{Fore.RESET}"
 
+def cls(self):
+    if os.name == "nt":
+        _ = os.system("cls")
+    else:
+        _ = os.system("clear")
+
 
 @dataclass(init=True)
 class User:
@@ -78,7 +84,6 @@ class User:
         Clases para manejar los errores u excepciones de la clase User.
         """
         pass
-
 
     def __init__(self, username: str, password: str, email: str = None, ids_range: list[int] | tuple[int] = []):
         self.username: str = username
@@ -101,11 +106,14 @@ class User:
         #* Definimos unalista predeterminada por si no se configura ningun intervalo
 
         if self._ids_range:
-            if self._ids_range[0] > self._ids_range[1] or self._ids_range[1]-self._ids_range[0] < 50:
-                print(cFormatter("El primer indice debe ser el término mas pequeño del intervalo o deben de tener mas distacia entre ellos. E.g [1, 10]", color= Fore.RED))
+            if self._ids_range[0] > self._ids_range[1]:
+                print(cFormatter("El primer indice debe ser el término mas pequeño del intervalo", color= Fore.RED))
                 return User.UserError()
             elif len(self._ids_range) > 2:
-                print(cFormatter("El intervalo debe ser entre un máximo de 2 numeros comprendidos. E.g [1, 10]", color= Fore.RED))
+                print(cFormatter("El intervalo debe ser entre un máximo de 2 numeros comprendidos. E.g [1, 100]", color= Fore.RED))
+                return User.UserError()
+            elif self._ids_range[1]-self._ids_range[0] < 50:
+                print(cFormatter("Debe de haber una distacia de al menos 50 entre numeros del intervalo. E.g [1, 100]", color= Fore.RED))
                 return User.UserError()
             else:
                 avariable_ids = list(range(self._ids_range[0], self._ids_range[1]+1))
@@ -210,23 +218,17 @@ class Database:
             else:
                 return self.ClockError(self.ClockErrorMsg)
 
-    def __cls__(self):
-        if os.name == "nt":
-            _ = os.system("cls")
-        else:
-                _ = os.system("clear")
 
     def __init__(self, user: User = None, log_path: Path = None):
-        self.user: User = user if user is not None else "Invitado"
+        self.user: User | str = user if user is not None else "Invitado"
         self.userToken = user.token if user is not None and user.token is not None else None
         try:
             self.log_path: Path = log_path if log_path is not None else Path("db_log.txt")
         except not log_path.is_file():
-            raise Database.DatabaseInitializationError(cFormatter("El archivo de log no existe o no es valido (Probablemente no sea un archivo)", color= Fore.RED))
+            raise Database.DatabaseInitializationError(cFormatter("El archivo de log no existe o no es valido (Probablemente no sea un archivo o no de tipo texto)", color= Fore.RED))
         self.EntryDataEnabled: bool = None
         self.Running: bool = False
         self.CheckEntryDataEnabled()       #* Comprobamos si se pueden introducir datos en la base de datos
-        #self.LogChecker()                   #* Despues verificamos si el archivo de log existe y es valido y demas configuraciones
 
     @property
     def in_transaction(self):
@@ -252,7 +254,8 @@ class Database:
         """
         Devuelve el hilo del cronometro
         """
-        return self._DbRunTimeThread if self.runtime is not None else self.DatabaseInitializationError(cFormatter("No se ha iniciado la base de datos", color= Fore.RED))
+        return self._DbRunTimeThread.is_alive() if self.is_operative else print(self.DatabaseInitializationError(cFormatter("No se ha iniciado la base de datos", color= Fore.RED)))
+
 
     @classmethod
     def CreateToken(cls, user: User) -> str:
@@ -362,7 +365,7 @@ class Database:
         ## Importante:
         La base de datos debe cerrarse para que los cambios surgan efecto
         """
-        self.TempDbWakeTime = t.time()
+        self._TempDbWakeTime = t.time()
 
         self.conn = sql.connect(":memory:")
         self.c = self.conn.cursor()
@@ -377,8 +380,8 @@ class Database:
         )
         """)
         self.conn.commit()
-        self.TempDbWakeTime = round((t.time()-self.TempDbWakeTime)*1000, 2)
-        print(cFormatter(f"Base de datos temporal inicializada en {self.TempDbWakeTime} ms", color=Fore.GREEN))
+        self._TempDbWakeTime = round((t.time()-self._TempDbWakeTime)*1000, 2)
+        print(cFormatter(f"Base de datos temporal inicializada en {self._TempDbWakeTime} ms", color=Fore.GREEN))
         return self.conn
 
     def _CloseTempDb(self) -> None:
@@ -393,28 +396,32 @@ class Database:
         temp_db = self._InitTempDb()
         active_users = temp_db.execute("SELECT * FROM users").fetchall()
 
-        if self.userToken is not None:
-            if self.userToken in active_users:
-                self.EntryDataEnabled = True
-                self._LogWritter(f"Se ha habilitado la entrada de datos", self.user.username, special_info= [self.user.token])
-            elif self.userToken not in active_users and self.user.username in active_users:
-                print(cFormatter("Se ha encontrado un usuario activo con el mismo nombre de usuario pero con un token diferente", color=Fore.YELLOW))
-                self.EntryDataEnabled = True
-                self._LogWritter(f"Se ha habilitado la entrada de datos", self.user.username, special_info= [self.user.token])
+        if not self.user == "Invitado":
+            if self.userToken is not None:
+                if self.userToken in active_users:
+                    self._LogWritter(f"Se ha habilitado la entrada de datos", self.user.username, special_info= [self.user.token])
+                    self.EntryDataEnabled = True
+                    return True
+                elif self.userToken not in active_users and self.user.username in active_users:
+                    print(cFormatter(f"Se ha encontrado un usuario activo con el mismo nombre de usuario pero con un token diferente.\nSe ha solucionado creando una nueva token para este usuario -> | {Database.CreateToken(self.user)} |.", color=Fore.YELLOW))
+                    self._LogWritter(f"Se ha habilitado la entrada de datos", self.user.username, special_info= [self.user.token])
+                    self.EntryDataEnabled = True
+                    return True
+                else:
+                    temp_db.execute("INSERT INTO users (Username, Email, Password, Token, Created_at) VALUES (?, ?, ?, ?, ?)", (self.user.username, self.user.email, self.user.password, self.user.token, self.user.created_at))
+                    print(cFormatter(f"Se ha añadido al usuario {self.user.username} con ID [{self.user.UId}] a usuarios permitidos", color= Fore.GREEN))
+                    self._CloseTempDb()
+                    self.EntryDataEnabled = True
+                    return True
             else:
-                temp_db.execute("INSERT INTO users (Username, Email, Password, Token, Created_at) VALUES (?, ?, ?, ?, ?)", (self.user.username, self.user.email, self.user.password, self.user.token, self.user.created_at))
-                print(cFormatter(f"Se ha añadido al usuario {self.user.username} con ID [{self.user.UId}] a usuarios permitidos", color= Fore.GREEN))
-            return self.EntryDataEnabled
+                self.EntryDataEnabled = False
+                print(cFormatter(f"El usuario {self.user.username} no posee un token asignado para acceder a la base de datos. Use ``Database.CreateToken()`` para asignar un token unico al usuario.", color= Fore.YELLOW))
+                return False
         else:
+            self._CloseTempDb()
             self.EntryDataEnabled = False
-            print(cFormatter(f"El usuario {self.user.username} no posee un token asignado para acceder a la base de datos. Use ``Database.CreateToken()`` para asignar un token unico al usuario.", color= Fore.YELLOW))
-
-    def _InitInternalTables(self):
-        """
-        Inicializa las tablas internas de la base de datos
-        """
-        pass
-
+            print(cFormatter(f"El usuario {self.user} no esta en usuarios activos y solo puede acceso a ver la base de datos", color=Fore.YELLOW))
+            return False
 
 
 
@@ -450,8 +457,6 @@ class Database:
         print(cFormatter(f"Base de datos inicializada en {self.DbWakeTime} ms", color=Fore.GREEN))
         return self.conn
 
-
-
     def ExecuteRequest(self, _sql_request: str):
         """
         Ejecuta una sentencia SQL
@@ -462,14 +467,12 @@ class Database:
         except Exception as error:
             return error("Error al ejecutar la sentencia SQL, seguramente debido a que no es un formato valido (docstring) o no existe la tabla")
             
-
     def CreateTable(self, table: str, columns: list):
         """
         Crea una tabla en la base de datos
         """
 
         self.conn.execute(f"CREATE TABLE IF NOT EXISTS {table} ({columns})")
-
 
     def CloseConnection(self):
         """

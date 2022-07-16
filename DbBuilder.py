@@ -193,8 +193,7 @@ class Database:
         def timer(self):
             while True:
                 self._active = True
-                print(self._calc_passed_time_format())
-                t.sleep(1)
+                print(self._calc_passed_time_format(), end= '\r')
         
         def pauseTimer(self):
             if self.active:

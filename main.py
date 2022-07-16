@@ -1,11 +1,8 @@
 from GUIBuilder import MainWindow
-from DbBuilder import *
-from DbBuilder import Database
+import DbBuilder as D
 
 ...
-
-er = User("Alvaro", "Aasdfzzz", "asdlma@gmail.-com")
-Database.CreateToken(er)
-e = Database(er)
-e.ClockThread
-e._Clock()
+u = D.User("Alvaro", "ByAlvaro54", "alvarodrumer54@gmail.com")
+u2 = D.User("Jorge", "#megustaelqueso", "jorgehola@gmail.com")
+D.Database.CreateToken(u)
+d = D.Database(u)

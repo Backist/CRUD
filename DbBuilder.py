@@ -1,7 +1,9 @@
 import sqlite3 as sql
 import time as t
-import platform
+from platform import python_version, system
+import os.path
 import os
+from typing import NoReturn
 #* import sqlalchemy para uso de db en API's o Webs
 
 #*from werkzeug.security import generate_password_hash, check_password_hash
@@ -66,7 +68,7 @@ def cFormatter(
             else:
                 return f"{color}{string}{Fore.RESET}"
 
-def cls(self):
+def cls():
     if os.name == "nt":
         _ = os.system("cls")
     else:
@@ -150,8 +152,7 @@ class Database:
     Instancia un objeto de clase Database. Es decir, el objeto actua como base de datos.
 
     ## Importante:
-    Para poder utilizar la base de datos el usuario previamente deberá hacer uso de la funcion ``CreateToken`` para que se le sea atribuida una token
-    con la que acceder a la base de datos, de lo contrario no se podrá acceder a ella y returnará un error de tipo ``Attribute Error``.
+    El acceso a la base de datos
     """
 
     class DatabaseInitializationError(Exception):
@@ -162,21 +163,16 @@ class Database:
 
     class Clock:
 
-        class ClockError(Exception):
-            """
-            Clases para manejar los errores u excepciones de la clase Clock.
-            """
-            pass
+        ClockErrorMsg = cFormatter("El cronometro no esta activo. (Probablemente porque no se ha iniciado una conexion con la base de datos)", color= Fore.RED)
 
         def __init__(self, refresh_timer_ms: int = 500):
             self.Clockrefresh = refresh_timer_ms
             self._initTime = datetime.now()
             self._active = False
-            self.ClockErrorMsg = cFormatter("El cronometro no esta activo. (Probablemente porque no se ha iniciado una conexion con la base de datos)", color= Fore.RED)
 
         @property
         def active(self):
-            return self._active if self._active else self.ClockError(self.ClockErrorMsg)
+            return self._active if self._active else print(self.ClockErrorMsg)
 
         def _calc_passed_time_format(self):
             passed_seconds = (datetime.now() - self._initTime).total_seconds()
@@ -187,20 +183,19 @@ class Database:
             segundos -= horas*60*60
             minutos = int(segundos/60)
             segundos -= minutos*60
-            self.timerTuple: list[int] = [horas, minutos, segundos]
             return f"{horas:02d}:{minutos:02d}:{segundos:02d}"
         
         def timer(self):
             while True:
                 self._active = True
                 print(self._calc_passed_time_format(), end= '\r')
-        
+            
         def pauseTimer(self):
             if self.active:
                 self._initTime = datetime.now()
                 self._active = False
             else:
-                return self.ClockError(self.ClockErrorMsg)
+                return print(self.ClockErrorMsg)
 
         def activeTimer(self):
             """Activa el cronometro si esta pausado.\nTambien lo hace si esta parado pero es mejor utilizar el metodo ``.timer()``"""
@@ -215,7 +210,7 @@ class Database:
                 self._initTime = datetime.now()
                 print(cFormatter("El cronometro se ha reseteado", color= Fore.GREEN))
             else:
-                return self.ClockError(self.ClockErrorMsg)
+                return print(self.ClockErrorMsg)
 
 
     def __init__(self, user: User = None, log_path: Path = None):
@@ -234,7 +229,7 @@ class Database:
         """
         Devuelve True si hay una transaccion en curso
         """
-        return self.conn.in_transaction()
+        return self.conn.in_transaction() if self.is_operative else print(cFormatter("No se ha iniciado la base de datos", color= Fore.RED))
 
     @property
     def is_operative(self) -> list[bool | str]:
@@ -246,24 +241,25 @@ class Database:
     @property
     def runtime(self):
         """Devuelve el tiempo que lleva la base de datos encendida"""
-        return self.DbRunTime if self.Running else cFormatter("No se ha iniciado la base de datos", color= Fore.RED)
+        return self.DbRunTime if self.is_operative else cFormatter("No se ha iniciado la base de datos", color= Fore.RED)
 
     @property
     def ClockThread(self):
         """
         Devuelve el hilo del cronometro
         """
-        return self._DbRunTimeThread.is_alive() if self.is_operative else print(self.DatabaseInitializationError(cFormatter("No se ha iniciado la base de datos", color= Fore.RED)))
+        return self._DbRunTimeThread.is_alive() if self.is_operative else print(cFormatter("No se ha iniciado la base de datos", color= Fore.RED))
 
 
     @classmethod
     def CreateToken(cls, user: User) -> str:
-        
         """
         Crea un token unico que se asigna a un usuario.
         El token es una cadena de caracteres aleatoria de 16 caracteres privada y unica para cada usuario.
         """
-        _already_tokens = []
+        
+        temp_db = cls._InitTempDb(cls)
+        used_tokens = temp_db.execute("SELECT Tokens from AUC").fetchall()
 
         minus = "abcdefghijklmñopqrstuwxyz"
         mayus = minus.upper()
@@ -274,8 +270,10 @@ class Database:
         extract = sample(base, 16)
         token = "8/x::"+"".join(extract)
 
-        if not token in _already_tokens:
-            _already_tokens.append(token)
+        if not token in used_tokens:
+            temp_db.execute(f"INSERT INTO AUC (Tokens) VALUES ('{token}')")     #! Muy importante las comillas a pesar de hacer f-string
+            temp_db.commit()
+            temp_db.close()
             user.token = token
             return token
         else:
@@ -338,7 +336,7 @@ class Database:
                         return
 
 
-    def _InitClock(self) -> None:
+    def _InitThreadClock(self) -> None:
         """Inicia una funcion en un hilo independiente que se encarga de llevar y actualizar el tiempo que lleva la base de datos operativa"""
         self.DbRunTime = 0
         self.Running = True
@@ -351,37 +349,51 @@ class Database:
             self._DbRunTimeThread.join()
 
     
-    def _Clock(self, pause_after: int = None):
+    def _Clock(self) -> Clock | NoReturn:
         """Funcion que se encarga de llevar y actualizar el tiempo que lleva la base de datos operativa"""
         timer = self.Clock()
         self.DbRunTime = timer.timer()
 
 
-    def _InitTempDb(self) -> sql.Connection:
+    def _InitTempDb(self, max_elems: int = 500) -> sql.Connection:
         """
         Inicializa la base de datos temporal para la ejecucion de las pruebas y para verificar algunos parametros y permisos.
 
         ## Importante:
         La base de datos debe cerrarse para que los cambios surgan efecto
         """
-        self._TempDbWakeTime = t.time()
+        TempDbWakeTime = t.time()
 
-        self.conn = sql.connect(":memory:")
+        self.conn = sql.connect("PUC.db")    #* Private User Credentials (PUC)
         self.c = self.conn.cursor()
         self.c.execute("""
         CREATE TABLE IF NOT EXISTS users (
-            UId INTEGER PRIMARY KEY,
+            UId INTEGER PRIMARY KEY AUTOINCREMENT,
             Username TEXT,
+            Userlevel INTEGER,
             Email TEXT,
             Password TEXT,
             Token TEXT,
             Created_at TIMESTAMP
         )
         """)
+        self.c.execute("""                  
+        CREATE TABLE IF NOT EXISTS AUC (    
+            Tokens NTEXT,
+            IDs INTEGER
+        ) 
+        """)                        #TODO: AUC --> Already Used Credentials               
         self.conn.commit()
-        self._TempDbWakeTime = round((t.time()-self._TempDbWakeTime)*1000, 2)
-        print(cFormatter(f"Base de datos temporal inicializada en {self._TempDbWakeTime} ms", color=Fore.GREEN))
+
+        if len(self.c.execute(f"SELECT * from users").fetchall()) >= max_elems:
+            self._DelTempDbElems()
+            print(cFormatter("Eliminados 500 elementos para limpieza de la base de datos temporal"))
+        else:
+            pass
+        TempDbWakeTime = round((t.time()-TempDbWakeTime)*1000, 2)
+        print(cFormatter(f"Base de datos temporal inicializada en {TempDbWakeTime} ms", color=Fore.GREEN))
         return self.conn
+
 
     def _CloseTempDb(self) -> None:
         """Cierra la base de datos temporal y guarda los cambios realizados"""
@@ -389,26 +401,45 @@ class Database:
         self.conn.close()
         print(cFormatter("Base de datos temporal cerrada y con exito.", color=Fore.GREEN))
 
+    def _DelTempDbElems(self, elem: str = None, table: str = "users") -> None:
+        """Elimina elementos de la tabla de datos temporal si estos existen y hay problemas con ellos.
+        Si no se pasa un elemento a eliminar, el metodo borrará todos los elementos de la tabla users (Excepto que se proporcione una)"""
+        if elem:
+            self.c.execute(f"DELETE FROM {table} WHERE {elem} =")
+            self.conn.commit()
+            self.conn.close()
+        else:
+            self.c.execute(f"DELETE FROM {table}")
+            self.conn.commit()
+            self.conn.close()
+
+    def DbDiskSize(self):
+        return f"{round(os.path.getsize(Path('PUC.db'))/1000, 2)} KB"
+
 
     def CheckEntryDataEnabled(self) -> bool:
         
         temp_db = self._InitTempDb()
-        active_users = temp_db.execute("SELECT * FROM users").fetchall()
+        dumped_data = temp_db.execute("SELECT * FROM users").fetchall()   
+        flist = [f for f in dumped_data]
+        ids = [i[0] for i in flist]
+        usernames = [u[1] for u in flist]
+        tokens = [t[5] for t in flist]       
 
         if not self.user == "Invitado":
             if self.userToken is not None:
-                if self.userToken in active_users:
+                if self.userToken in tokens:
                     self._LogWritter(f"Se ha habilitado la entrada de datos", self.user.username, special_info= [self.user.token])
                     self.EntryDataEnabled = True
                     return True
-                elif self.userToken not in active_users and self.user.username in active_users:
-                    print(cFormatter(f"Se ha encontrado un usuario activo con el mismo nombre de usuario pero con un token diferente.\nSe ha solucionado creando una nueva token para este usuario -> | {Database.CreateToken(self.user)} |.", color=Fore.YELLOW))
-                    self._LogWritter(f"Se ha habilitado la entrada de datos", self.user.username, special_info= [self.user.token])
-                    self.EntryDataEnabled = True
-                    return True
+                elif self.userToken not in tokens and self.user.UId in usernames:
+                    print(cFormatter(f"Se ha encontrado un usuario activo con el mismo nombre de usuario pero con un token diferente.Por favor, compruebe su token y si es necesario cree una de nuevo", color= Fore.YELLOW))
+                    self.EntryDataEnabled = False
+                    return False
                 else:
-                    temp_db.execute("INSERT INTO users (Username, Email, Password, Token, Created_at) VALUES (?, ?, ?, ?, ?)", (self.user.username, self.user.email, self.user.password, self.user.token, self.user.created_at))
+                    temp_db.execute("INSERT INTO users (UId, Username, Email, Password, Token, Created_at) VALUES (?, ?, ?, ?, ?, ?)", (self.user.UId ,self.user.username, self.user.email, self.user.password, self.user.token, self.user.created_at))
                     print(cFormatter(f"Se ha añadido al usuario {self.user.username} con ID [{self.user.UId}] a usuarios permitidos", color= Fore.GREEN))
+                    self._LogWritter(f"Se ha habilitado la entrada de datos", self.user.username, special_info= [self.user.token])
                     self._CloseTempDb()
                     self.EntryDataEnabled = True
                     return True
@@ -419,7 +450,7 @@ class Database:
         else:
             self._CloseTempDb()
             self.EntryDataEnabled = False
-            print(cFormatter(f"El usuario {self.user} no esta en usuarios activos y solo puede acceso a ver la base de datos", color=Fore.YELLOW))
+            print(cFormatter(f"El usuario no esta en usuarios activos y solo puede acceso a ver la base de datos, accedera como INVITADO", color=Fore.YELLOW))
             return False
 
 
@@ -451,8 +482,8 @@ class Database:
             cached_statements= _cached_statements,
             uri= _uri
         )
-        self._InitClock()                                             #TODO: Marcamos la conexion como operativa
-        self.DbWakeTime = round((t.time()-self.DbWakeTime)*1000, 2)     #TODO: Guardamos el tiempo de ejecuccion de la conexio (1000ms = 1s)
+        self._InitThreadClock()                                             #TODO: Marcamos la conexion como operativa
+        self.DbWakeTime = round((t.time()-self.DbWakeTime)*1000, 4)     #TODO: Guardamos el tiempo de ejecuccion de la conexio (1000ms = 1s)
         print(cFormatter(f"Base de datos inicializada en {self.DbWakeTime} ms", color=Fore.GREEN))
         return self.conn
 
@@ -477,18 +508,22 @@ class Database:
         """
         Cierra la conexion con la base de datos
         """
-
-        if self.conn.total_changes >= 1 and not self.conn.commit(): 
-            return Warning("Se han realizado cambios en la base de datos y no se ha realizado un commit. Seguro que desea cerrar la conexion?")
-        self.conn.close()
-        self.DbRunTime = t.time() - self.DbRunTime
+        try:
+            if self.conn.total_changes >= 1 and not self.conn.commit(): 
+                print(cFormatter("Se han realizado cambios en la base de datos y no se ha realizado un commit. Seguro que desea cerrar la conexion?", color= Fore.YELLOW))
+            else:
+                self.conn.close()
+                self.DbRunTime = t.time() - self.DbRunTime
+                print(cFormatter(f"Base de datos cerrada en {round(self.DbRunTime*1000, 2)} ms correctamente", color=Fore.GREEN))
+        except Exception as error:
+            print(cFormatter("No se ha iniciado una conexion con la base de datos", color=Fore.RED))
 
 
 
 
 if __name__ == "__main__":
 
-    pyver = platform.python_version()
+    pyver = python_version()
     sysname = os.name
 
     if sysname.upper() != "NT":

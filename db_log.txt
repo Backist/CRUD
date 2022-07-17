@@ -13,3 +13,14 @@
 [2022-07-16 14:26:17][INFO] - | Jorge (['8/x::DIñFky72T/c9t*Aq']) | -> Se ha habilitado la entrada de datos
 [2022-07-16 14:28:09][INFO] - | Jorge (['8/x::sIrR@x9AFGW=TpPa']) | -> Se ha habilitado la entrada de datos
 [2022-07-17 17:35:14][INFO] - | Alvaro (['8/x::ñjhÑZsm=dUBFLI2t']) | -> Se ha habilitado la entrada de datos
+[2022-07-18 01:08:17][INFO] - | Alvaro (['8/x::Ñ*PKMjAYL-gp8hS2']) | -> Se ha habilitado la entrada de datos
+[2022-07-18 01:12:11][INFO] - | Alvaro (['8/x::mñ5w8uZ=4Ñ0EbLhs']) | -> Se ha habilitado la entrada de datos
+[2022-07-18 01:13:06][INFO] - | Alvaro (['8/x::2kc-O9DY6tRwSg&s']) | -> Se ha habilitado la entrada de datos
+[2022-07-18 01:14:12][INFO] - | Alvaro (['8/x::6/a1OoDJ€SsÑ-8ñ&']) | -> Se ha habilitado la entrada de datos
+[2022-07-18 01:14:39][INFO] - | Alvaro (['8/x::2g14I#YiWpLR5J&Ñ']) | -> Se ha habilitado la entrada de datos
+[2022-07-18 01:14:56][INFO] - | Alvaro (['8/x::yd&X1ñhxÑ=TMlHk/']) | -> Se ha habilitado la entrada de datos
+[2022-07-18 01:15:16][INFO] - | Alvaro (['8/x::t2=yhDiEkzjuwGO7']) | -> Se ha habilitado la entrada de datos
+[2022-07-18 01:15:43][INFO] - | Alvaro (['8/x::/EA*ñSp1kKR8uBow']) | -> Se ha habilitado la entrada de datos
+[2022-07-18 01:16:57][INFO] - | Alvaro (['8/x::mWKdxCpc3UqyElTO']) | -> Se ha habilitado la entrada de datos
+[2022-07-18 01:17:26][INFO] - | Alvaro (['8/x::Z1=9kBñ*ÑWY2C6le']) | -> Se ha habilitado la entrada de datos
+[2022-07-18 01:17:59][INFO] - | Alvaro (['8/x::z2B=#@9YIwZQÑTsp']) | -> Se ha habilitado la entrada de datos

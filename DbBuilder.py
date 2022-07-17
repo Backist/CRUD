@@ -1,12 +1,15 @@
 import sqlite3 as sql
 import time as t
-from platform import python_version, system
+
 import os.path #* Para saber todo acerca de un archivo (tamaño, tipo, historial de cambios, etc.)
 import os
 from typing import NoReturn
 #* import sqlalchemy para uso de db en API's o Webs
 
 #*from werkzeug.security import generate_password_hash, check_password_hash
+from asyncio import run
+from checker import Checker
+from platform import python_version
 from colorama import Fore, Style, Back #, init
 from dataclasses import dataclass
 from datetime import datetime
@@ -223,6 +226,9 @@ class Database:
         self.EntryDataEnabled: bool = None
         self.Running: bool = False
         self.CheckEntryDataEnabled()       #* Comprobamos si se pueden introducir datos en la base de datos
+        # self.C = Checker(self)
+        # run(self.C.checkAll(self.log_path, self._InitTempDb()))
+        # self._CloseTempDb()
 
     @property
     def in_transaction(self):
@@ -242,13 +248,6 @@ class Database:
     def runtime(self):
         """Devuelve el tiempo que lleva la base de datos encendida"""
         return self.DbRunTime if self.is_operative else cFormatter("No se ha iniciado la base de datos", color= Fore.RED)
-
-    @property
-    def ClockThread(self):
-        """
-        Devuelve el hilo del cronometro
-        """
-        return self._DbRunTimeThread.is_alive() if self.is_operative else print(cFormatter("No se ha iniciado la base de datos", color= Fore.RED))
 
 
     @classmethod
@@ -422,7 +421,6 @@ class Database:
         temp_db = self._InitTempDb()
         dumped_data = temp_db.execute("SELECT * FROM users").fetchall()   
         flist = [f for f in dumped_data]
-        ids = [i[0] for i in flist]
         usernames = [u[1] for u in flist]
         tokens = [t[5] for t in flist]       
 
@@ -440,7 +438,6 @@ class Database:
                     temp_db.execute("INSERT INTO users (UId, Username, Email, Password, Token, Created_at) VALUES (?, ?, ?, ?, ?, ?)", (self.user.UId ,self.user.username, self.user.email, self.user.password, self.user.token, self.user.created_at))
                     print(cFormatter(f"Se ha añadido al usuario {self.user.username} con ID [{self.user.UId}] a usuarios permitidos", color= Fore.GREEN))
                     self._LogWritter(f"Se ha habilitado la entrada de datos", self.user.username, special_info= [self.user.token])
-                    self._CloseTempDb()
                     self.EntryDataEnabled = True
                     return True
             else:
@@ -448,7 +445,6 @@ class Database:
                 print(cFormatter(f"El usuario {self.user.username} no posee un token asignado para acceder a la base de datos. Use ``Database.CreateToken()`` para asignar un token unico al usuario.", color= Fore.YELLOW))
                 return False
         else:
-            self._CloseTempDb()
             self.EntryDataEnabled = False
             print(cFormatter(f"El usuario no esta en usuarios activos y solo puede acceso a ver la base de datos, accedera como INVITADO", color=Fore.YELLOW))
             return False

@@ -1,7 +1,7 @@
 import sqlite3 as sql
 import time as t
 from platform import python_version, system
-import os.path
+import os.path #* Para saber todo acerca de un archivo (tamaño, tipo, historial de cambios, etc.)
 import os
 from typing import NoReturn
 #* import sqlalchemy para uso de db en API's o Webs
@@ -279,7 +279,6 @@ class Database:
         else:
             return cls.CreateToken(user)
 
-
     def ReadLogLines(self, ext_file: Path = None) -> int:
         """Lee las lineas de un archivo de log y devuelve el numero de lineas.\n
         Por defecto lee las lineas del archivo de log predefinido, pero tambien es capaz de leer cualquier archivo externo de tipo texto."""
@@ -364,7 +363,8 @@ class Database:
         """
         TempDbWakeTime = t.time()
 
-        self.conn = sql.connect("PUC.db")    #* Private User Credentials (PUC)
+        self.temp_db_path = Path("PUC.db")
+        self.conn = sql.connect(self.temp_db_path.name)    #* Private User Credentials (PUC)
         self.c = self.conn.cursor()
         self.c.execute("""
         CREATE TABLE IF NOT EXISTS users (

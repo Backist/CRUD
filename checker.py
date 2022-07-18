@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from msvcrt import kbhit
 import os
 import mmap
 import logging
@@ -22,7 +23,6 @@ from sqlite3 import Connection
 
 #? Add \33[1m\33[<ansiref>]{FMT}\33[0m to add bolb messages
 
-
 FMT = "[{levelname:^4}] [{name}] [{asctime}]: {message}"
 FORMATS = {
     logging.DEBUG: FMT,
@@ -34,18 +34,25 @@ FORMATS = {
 
 
 class CustomFmt(logging.Formatter):
-
+    """Subclase de ``logging.Formatter`` que ofrece un formateo preconfigurado para DEBUG; INFO; WARNING; ERROR Y CRITICAL.\n
+    Asignar de esta manera:\n
+    ``handler = logging.StreamHandler()``\n
+    ``handler.setFormatter(CustomFmt())``\n
+    ``logging.basicConfig(..., handler= [handler])``\n
+    """
     def format(self, entry):
         log_fmt = FORMATS[entry.levelno]
         formatter = logging.Formatter(log_fmt, style="{", datefmt= '%Y-%m-%d %H:%M:%S')
         return formatter.format(entry)
 
+#* To this file logging
 handler = logging.StreamHandler()
 handler.setFormatter(CustomFmt())
 logging.basicConfig(
     level= logging.INFO,
     handlers=[handler]
 )
+#* //////////////////////////////
 
 def Logger(level, text: str, logger_preffix: str = None) -> str:
     """Funcion para formatear mensajes de terminal rapidamente.\n
@@ -82,6 +89,7 @@ class Checker:
 
     @staticmethod
     def ValidatePath(path: Path | str) -> bool:
+        """Retorna un booleano dependiendo de si el Path o el Path de la string existe o es un archivo"""
         if isinstance(path, str):
             fpath = Path(path)
             if not fpath.exists() or not fpath.is_file():
@@ -99,7 +107,6 @@ class Checker:
         ``list[1]`` -> Total lines without White lines\n
         ``list[2]`` -> White lines
         """
-
         if Checker.ValidatePath(StrOrPath):
             with open(StrOrPath if isinstance(StrOrPath, Path) else Path(StrOrPath), "r+b") as log:
                 if os.path.getsize(log.name) == 0:
@@ -164,6 +171,8 @@ class Checker:
                                     return True
     
     async def checkAll(self, log_path: Path | str, temp_db: Connection, main_db: Connection = None):
+        """Coroutine para verificar con un solo metodo toda la configuracoin del log y bases de datos.\n
+        Segun si se importa una configuracion o con los valores predeterminados."""
         self.logger.info("Iniciando Chequeo de toda la configuracion...")
         await asyncio.sleep(2)
         await self.CheckLog(log_path)
@@ -175,7 +184,7 @@ class Checker:
         self.logger.info("Chequeo finalizado.")
 
     async def CheckLog(self, log_path: Path | str, max_lines: int = 200):
-        self.logger.info("Iniciando Chequeo de Log...")
+        self.logger.debug("Iniciando Chequeo de Log...")
         if not self.ValidatePath(log_path):
             self.logger.error(f"El archivo '{log_path}' no existe o no es un archivo valido (Solo texto).")
             return self.logger.error("Se ha encontrado un error en el chequeo del log.")
@@ -202,18 +211,17 @@ class Checker:
 
     async def CheckTempDB(self, db_name: str, db_conn: Connection, max_elems: int = 500, max_size: int = 50000):
         self.logger.info("Iniciando Chequeo de la base de datos temporal...")
-
         
         if max_size:
             tempdb_size = round(os.path.getsize(db_name)/1000, 2)
             if tempdb_size >= max_size:
                 return self.logger.warning(f"La base de datos temporal tiene un tamaño de {tempdb_size} KB, supera el tamaño permitido.")
             else:
-                return
+                return self.logger.info("Chequeo de la base de datos temporal finalizado con exito.") 
         elif max_elems:
             tables = [t for t in db_conn.execute('SELECT name FROM sqlite_master WHERE type= "table"')]     
             #TODO: La tabla 'sqlite_master' contiene todas las tablas de la base de datos
-            tempdb_elems = len(db_conn.execute(f"SELECT * FROM {[t for t in tables]}").fetchall())
+            tempdb_elems = len(db_conn.execute(f"SELECT * FROM '{[t for t in tables]}'").fetchall())
             if tempdb_elems >= max_elems:
                 db_conn.execute(f"DELETE FROM {[t for t in tables]}")
                 self.logger.error(f"La base de datos temporal tiene {tempdb_elems} elementos, supera el numero de elementos permitido.")
@@ -221,7 +229,7 @@ class Checker:
             else:
                 return self.logger.info("Chequeo de la base de datos temporal finalizado con exito.") 
         else:
-            self.logger.info("Chequeo de la base de datos temporal finalizado con exito")
+            return self.logger.info("Chequeo de la base de datos temporal finalizado con exito")
 
     async def CheckTempDB(self, db: Connection, max_elems: int = 500, max_size: int = 50000):
         pass

@@ -8,7 +8,7 @@ from typing import NoReturn
 
 #*from werkzeug.security import generate_password_hash, check_password_hash
 from asyncio import run
-from checker import Checker
+import checker
 from platform import python_version
 from colorama import Fore, Style, Back #, init
 from dataclasses import dataclass
@@ -96,12 +96,11 @@ class User:
         self.token: str = None
         self._ids_range: list[int] | tuple[int] = ids_range
 
-        if len(password) < 8 or len(password) >= 8 and filter(lambda char: char in password, list(range(0, 9+1))) is None:
+        if len(password) < 8 or len(list(filter(lambda char: str(char) in password, list(range(0, 9+1))))) == 0:
             raise User.UserError(cFormatter("La contraseña debe tener al menos 8 caracteres y contener al menos un número.", color= Fore.RED))
         else:
             self.password: str = password
         self.UId = self._AsignIdentifier()
-
 
     def _AsignIdentifier(self) -> int:
         """
@@ -218,17 +217,24 @@ class Database:
 
     def __init__(self, user: User = None, log_path: Path = None):
         self.user: User | str = user if user is not None else "Invitado"
-        self.userToken = user.token if user is not None and user.token is not None else None
+        self.userToken = user.token if user is not None else None
         try:
-            self.log_path: Path = log_path if log_path is not None else Path("db_log.txt")
-        except not log_path.is_file():
+            self.log_path: Path = log_path if log_path is not None else Path("log.txt")
+        except not checker.Checker.ValidatePath(log_path):
             raise Database.DatabaseInitializationError(cFormatter("El archivo de log no existe o no es valido (Probablemente no sea un archivo o no de tipo texto)", color= Fore.RED))
         self.EntryDataEnabled: bool = None
         self.Running: bool = False
         self.CheckEntryDataEnabled()       #* Comprobamos si se pueden introducir datos en la base de datos
-        # self.C = Checker(self)
-        # run(self.C.checkAll(self.log_path, self._InitTempDb()))
-        # self._CloseTempDb()
+        self.C = checker.Checker(self)
+        try:
+            run(self.C.checkAll(self.log_path, self._InitTempDb()))
+        except KeyboardInterrupt:
+            raise Database.DatabaseInitializationError(cFormatter(
+                "Se ha parado el chequeo de las configuraciones, inicializacion pausada.", 
+                color= Fore.YELLOW
+                )
+            )
+        self._CloseTempDb()
 
     @property
     def in_transaction(self):
@@ -277,24 +283,6 @@ class Database:
             return token
         else:
             return cls.CreateToken(user)
-
-    def ReadLogLines(self, ext_file: Path = None) -> int:
-        """Lee las lineas de un archivo de log y devuelve el numero de lineas.\n
-        Por defecto lee las lineas del archivo de log predefinido, pero tambien es capaz de leer cualquier archivo externo de tipo texto."""
-
-        if ext_file is not None and not ext_file.is_file():
-            raise Database.DatabaseInitializationError(cFormatter("El archivo de log no existe o no es valido (Probablemente no sea un archivo o no sea valido)", color= Fore.RED))
-        else:
-            pass
-        with open(ext_file if ext_file is not None else self.log_path, "r+") as log:
-            mm = mmap(log.fileno(), 0)
-            total_lines = 0
-
-            while mm.readline():
-                total_lines += 1
-            log.close()
-        return total_lines
-
 
     def _LogWritter(
         self, 
@@ -525,8 +513,8 @@ if __name__ == "__main__":
     if sysname.upper() != "NT":
         print(cFormatter("Este programa esta probado en dispositivos Windows. Puede experimentar problemas si ejecuta el programa en otro sistema operativo", color= Fore.YELLOW))
         exit()
-    if pyver < "3.10":
-        print(cFormatter(f"Esta aplicacion requiere Python 3.10.x o superior. {cFormatter(f'Version actual: {pyver}', color= Fore.MAGENTA)}", color=Fore.RED))
+    if pyver < "3.10.2":
+        print(cFormatter(f"Esta aplicacion requiere Python 3.10.2 o superior. {cFormatter(f'Version actual: {pyver}', color= Fore.MAGENTA)}", color=Fore.RED))
         exit()
 
     #TODO: <--------- TESTING ---------->

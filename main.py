@@ -1,5 +1,5 @@
-from GUIBuilder import MainWindow
 import DbBuilder as D
 
-...
+u = D.User("Alvao", "Alvaromon@", "asd")
+print(u.encryptPassword())
 

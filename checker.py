@@ -1,12 +1,13 @@
 import asyncio
+from json import dumps
 import logging
-from msvcrt import kbhit
 import os
 import mmap
 import logging
 
 from pathlib import Path, PurePath
 from sqlite3 import Connection
+import time as t
 
 #* ////////////
 #*  COLORS
@@ -127,6 +128,38 @@ class Checker:
         else:
             return Checker.ValidatePath(StrOrPath)
 
+    @staticmethod
+    def GetFileSize(filePathOrStr: Path | str):
+        if Checker.ValidatePath(filePathOrStr):
+            return round(os.path.getsize(filePathOrStr)/1000, 2)
+        else:
+            return Checker.ValidatePath(filePathOrStr)
+
+    @staticmethod
+    def GetFileInfo(filePathOrStr: Path | str) -> dict:
+        if Checker.ValidatePath(filePathOrStr):
+            finfo = {}
+            afile = t.asctime(t.localtime(os.path.getatime(filePathOrStr)))
+            mfile = t.asctime(t.localtime(os.path.getmtime(filePathOrStr)))
+            cfile = t.asctime(t.localtime(os.path.getctime(filePathOrStr)))    #* Devuelve la hora de creacion del archivo
+            sfile = Checker.GetFileSize(filePathOrStr)
+            ext = os.path.splitext(filePathOrStr)[1]   #* Divide la ruta en dos, donde el segundo elemento es la ext.
+            with open(filePathOrStr, "r+") as file:
+                enc = file.encoding
+            finfo["Name"] = file.name
+            finfo["Absolute path"] = Path(filePathOrStr).absolute().as_posix() if not isinstance(filePathOrStr, Path) else filePathOrStr.absolute().as_posix()
+            finfo["Home directory"] = Path(filePathOrStr).home().as_posix() if not isinstance(filePathOrStr, Path) else filePathOrStr.home().as_posix()
+            finfo["Last access"] = afile
+            finfo["Last modification"] = mfile
+            finfo["Creation data"] = cfile
+            finfo["File size"] = f"{sfile} KB"
+            finfo["Total lines"] = Checker.ReadLines(filePathOrStr)[1]
+            finfo["Extension"] = ext
+            finfo["Enconding"] = enc
+            return finfo
+        else:
+            return Checker.ValidatePath(filePathOrStr)
+
     def _ValidateConfig(self, config: dict) -> bool:
         for ck in config.keys():
             if not ck in ["Log", "TempDB", "MainDB"]:
@@ -178,9 +211,7 @@ class Checker:
         await self.CheckLog(log_path)
         await asyncio.sleep(2)
         await self.CheckTempDB(db=temp_db)
-        await asyncio.sleep(2)
         #await self.CheckMainDB(main_db)
-        await asyncio.sleep(2)
         self.logger.info("Chequeo finalizado.")
 
     async def CheckLog(self, log_path: Path | str, max_lines: int = 200):
@@ -210,10 +241,10 @@ class Checker:
                     return self.logger.info("Chequeo de Log finalizado con exito.")
 
     async def CheckTempDB(self, db_name: str, db_conn: Connection, max_elems: int = 500, max_size: int = 50000):
-        self.logger.info("Iniciando Chequeo de la base de datos temporal...")
+        print(self.logger.info("Iniciando Chequeo de la base de datos temporal..."))
         
         if max_size:
-            tempdb_size = round(os.path.getsize(db_name)/1000, 2)
+            tempdb_size = self.GetFileSize(db_name)
             if tempdb_size >= max_size:
                 return self.logger.warning(f"La base de datos temporal tiene un tamaño de {tempdb_size} KB, supera el tamaño permitido.")
             else:
@@ -233,3 +264,5 @@ class Checker:
 
     async def CheckTempDB(self, db: Connection, max_elems: int = 500, max_size: int = 50000):
         pass
+
+print(Checker.GetFileInfo("requeriments.txt"))

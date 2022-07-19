@@ -1,23 +1,22 @@
 import sqlite3 as sql
 import time as t
-
 import os.path #* Para saber todo acerca de un archivo (tamaño, tipo, historial de cambios, etc.)
 import os
-from typing import NoReturn
+
 #* import sqlalchemy para uso de db en API's o Webs
 
-#*from werkzeug.security import generate_password_hash, check_password_hash
 from asyncio import run
 import checker
-from platform import python_version
 from colorama import Fore, Style, Back #, init
 from dataclasses import dataclass
 from datetime import datetime
+from platform import python_version
+from typing import NoReturn
 from json import dumps
-from mmap import mmap
 from pathlib import Path
 from random import choice, randint, sample
 from threading import Thread
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 __all__: list[str] = ["User", "cFormatter", "Database"]     
@@ -102,6 +101,10 @@ class User:
             self.password: str = password
         self.UId = self._AsignIdentifier()
 
+    def encryptPassword(self, mode: str = "pbkdf2:sha256"):
+            encryp = generate_password_hash(self.password, mode, salt_length= 32)
+            return encryp
+
     def _AsignIdentifier(self) -> int:
         """
         Asigna un identificador a un usuario
@@ -116,7 +119,7 @@ class User:
             elif len(self._ids_range) > 2:
                 print(cFormatter("El intervalo debe ser entre un máximo de 2 numeros comprendidos. E.g [1, 100]", color= Fore.RED))
                 return User.UserError()
-            elif self._ids_range[1]-self._ids_range[0] < 50:
+            elif self._ids_range[1]-self._ids_range[0]:
                 print(cFormatter("Debe de haber una distacia de al menos 50 entre numeros del intervalo. E.g [1, 100]", color= Fore.RED))
                 return User.UserError()
             else:
@@ -225,9 +228,9 @@ class Database:
         self.EntryDataEnabled: bool = None
         self.Running: bool = False
         self.CheckEntryDataEnabled()       #* Comprobamos si se pueden introducir datos en la base de datos
-        self.C = checker.Checker(self)
+        self.Checker = checker.Checker(self)
         try:
-            run(self.C.checkAll(self.log_path, self._InitTempDb()))
+            run(self.Checker.checkAll(self.log_path, self._InitTempDb()))
         except KeyboardInterrupt:
             raise Database.DatabaseInitializationError(cFormatter(
                 "Se ha parado el chequeo de las configuraciones, inicializacion pausada.", 
@@ -409,6 +412,7 @@ class Database:
         temp_db = self._InitTempDb()
         dumped_data = temp_db.execute("SELECT * FROM users").fetchall()   
         flist = [f for f in dumped_data]
+        ids = [i[0] for i in flist]
         usernames = [u[1] for u in flist]
         tokens = [t[5] for t in flist]       
 
@@ -418,12 +422,12 @@ class Database:
                     self._LogWritter(f"Se ha habilitado la entrada de datos", self.user.username, special_info= [self.user.token])
                     self.EntryDataEnabled = True
                     return True
-                elif self.userToken not in tokens and self.user.UId in usernames:
+                elif self.userToken not in tokens and self.user.UId in ids:
                     print(cFormatter(f"Se ha encontrado un usuario activo con el mismo nombre de usuario pero con un token diferente.Por favor, compruebe su token y si es necesario cree una de nuevo", color= Fore.YELLOW))
                     self.EntryDataEnabled = False
                     return False
                 else:
-                    temp_db.execute("INSERT INTO users (UId, Username, Email, Password, Token, Created_at) VALUES (?, ?, ?, ?, ?, ?)", (self.user.UId ,self.user.username, self.user.email, self.user.password, self.user.token, self.user.created_at))
+                    temp_db.execute("INSERT INTO users (UId, Username, Email, Password, Token, Created_at) VALUES (?, ?, ?, ?, ?, ?)", (self.user.UId ,self.user.username, self.user.email, self.user.encryptPassword(), self.user.token, self.user.created_at))
                     print(cFormatter(f"Se ha añadido al usuario {self.user.username} con ID [{self.user.UId}] a usuarios permitidos", color= Fore.GREEN))
                     self._LogWritter(f"Se ha habilitado la entrada de datos", self.user.username, special_info= [self.user.token])
                     self.EntryDataEnabled = True
@@ -519,7 +523,7 @@ if __name__ == "__main__":
 
     #TODO: <--------- TESTING ---------->
 
-    u = User("Alvaro", "Byalvaro54", "alvarodrumer54@gmail.com", [1, 1000])
+    u = User("Alvaro", "Byalvaro54", "alvarodrumer54@gmail.com")
     Database.CreateToken(u)
     db = Database(u)
     print(db.is_operative)

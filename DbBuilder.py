@@ -1,12 +1,13 @@
 import sqlite3 as sql
+from tabnanny import check
 import time as t
 import os.path #* Para saber todo acerca de un archivo (tamaño, tipo, historial de cambios, etc.)
 import os
+import checker
 
 #* import sqlalchemy para uso de db en API's o Webs
 
 from asyncio import run
-import checker
 from colorama import Fore, Style, Back #, init
 from dataclasses import dataclass
 from datetime import datetime
@@ -89,7 +90,7 @@ class User:
         """
         pass
 
-    def __init__(self, username: str, password: str, email: str = None, ids_range: list[int] | tuple[int] = []):
+    def __init__(self, username: str, password: str, email: str = None,ids_range: list[int] | tuple[int] = []):
         self.username: str = username
         self.email: str = email
         self.token: str = None
@@ -237,7 +238,7 @@ class Database:
                 color= Fore.YELLOW
                 )
             )
-        self._CloseTempDb()
+        self.CloseConnection()
 
     @property
     def in_transaction(self):
@@ -364,7 +365,7 @@ class Database:
             Email TEXT,
             Password TEXT,
             Token TEXT,
-            Created_at TIMESTAMP
+            Created_at TIMESTAMP ASC
         )
         """)
         self.c.execute("""                  
@@ -372,36 +373,34 @@ class Database:
             Tokens NTEXT,
             IDs INTEGER
         ) 
-        """)                        #TODO: AUC --> Already Used Credentials               
+        """)                        #TODO: AUC --> Already Used Credentials              
         self.conn.commit()
 
         if len(self.c.execute(f"SELECT * from users").fetchall()) >= max_elems:
-            self._DelTempDbElems()
+            self.delElems()
             print(cFormatter("Eliminados 500 elementos para limpieza de la base de datos temporal"))
         else:
             pass
         TempDbWakeTime = round((t.time()-TempDbWakeTime)*1000, 2)
         print(cFormatter(f"Base de datos temporal inicializada en {TempDbWakeTime} ms", color=Fore.GREEN))
-        return self.conn
+        return self.conn        
 
-
-    def _CloseTempDb(self) -> None:
-        """Cierra la base de datos temporal y guarda los cambios realizados"""
+    def reseTables(self, table: str):
+        """
+        Resetea las tablas de la base de datos
+        """
+        self.c.execute(f"DROP TABLE {table}")
         self.conn.commit()
-        self.conn.close()
-        print(cFormatter("Base de datos temporal cerrada y con exito.", color=Fore.GREEN))
 
-    def _DelTempDbElems(self, elem: str = None, table: str = "users") -> None:
-        """Elimina elementos de la tabla de datos temporal si estos existen y hay problemas con ellos.
+    def delAct(self, elem: str = None, table: str = "users") -> None:
+        """Elimina elementos de la tabla de datos.
         Si no se pasa un elemento a eliminar, el metodo borrará todos los elementos de la tabla users (Excepto que se proporcione una)"""
         if elem:
             self.c.execute(f"DELETE FROM {table} WHERE {elem} =")
             self.conn.commit()
-            self.conn.close()
         else:
             self.c.execute(f"DELETE FROM {table}")
             self.conn.commit()
-            self.conn.close()
 
     def DbDiskSize(self):
         return f"{round(os.path.getsize(Path('PUC.db'))/1000, 2)} KB"

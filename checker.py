@@ -1,13 +1,15 @@
 import asyncio
-from json import dumps
 import logging
 import os
 import mmap
 import logging
-
-from pathlib import Path, PurePath
-from sqlite3 import Connection
 import time as t
+
+from werkzeug.security import check_password_hash
+from datetime import datetime
+from pathlib import Path
+from sqlite3 import Connection
+
 
 #* ////////////
 #*  COLORS
@@ -95,12 +97,13 @@ class Checker:
             fpath = Path(path)
             if not fpath.exists() or not fpath.is_file():
                 return False
-            return True
-        elif isinstance(path, PurePath) and not path.exists() or not path.is_file():
+            else:
+                return True
+        elif isinstance(path, Path) and not path.exists() or not path.is_file():
             return False
         else:
             return True
-
+            
     @staticmethod
     def ReadLines(StrOrPath: Path | str) -> list[int]:
         """Lee las lineas de un archivo y devuelve el numero de lineas.\n
@@ -119,7 +122,7 @@ class Checker:
                 white_lines = 0
     
                 for line in iter(mm.readline, b""):     #* b"" para leer en binario. El salto de linea == '\r\n'
-                    if line == b"\r\n":
+                    if line == b"\r\n":         
                         white_lines += 1
                     else:
                         total_lines += 1
@@ -129,20 +132,20 @@ class Checker:
             return Checker.ValidatePath(StrOrPath)
 
     @staticmethod
-    def GetFileSize(filePathOrStr: Path | str):
+    def getFileSize(filePathOrStr: Path | str):
         if Checker.ValidatePath(filePathOrStr):
             return round(os.path.getsize(filePathOrStr)/1000, 2)
         else:
             return Checker.ValidatePath(filePathOrStr)
 
     @staticmethod
-    def GetFileInfo(filePathOrStr: Path | str) -> dict:
+    def getFileInfo(filePathOrStr: Path | str) -> dict:
         if Checker.ValidatePath(filePathOrStr):
             finfo = {}
             afile = t.asctime(t.localtime(os.path.getatime(filePathOrStr)))
             mfile = t.asctime(t.localtime(os.path.getmtime(filePathOrStr)))
             cfile = t.asctime(t.localtime(os.path.getctime(filePathOrStr)))    #* Devuelve la hora de creacion del archivo
-            sfile = Checker.GetFileSize(filePathOrStr)
+            sfile = Checker.getFileSize(filePathOrStr)
             ext = os.path.splitext(filePathOrStr)[1]   #* Divide la ruta en dos, donde el segundo elemento es la ext.
             with open(filePathOrStr, "r+") as file:
                 enc = file.encoding
@@ -159,6 +162,13 @@ class Checker:
             return finfo
         else:
             return Checker.ValidatePath(filePathOrStr)
+
+    @staticmethod
+    def checkPassword(hash_password: str, primitive_password: str) -> bool:
+        if not hash_password.startswith("pbkdf2:"):
+            raise TypeError("La contraseña encriptada no utiliza un metodo admitido o no esta encriptada")
+        else:
+            return check_password_hash(hash_password, primitive_password)
 
     def _ValidateConfig(self, config: dict) -> bool:
         for ck in config.keys():
@@ -209,60 +219,58 @@ class Checker:
         self.logger.info("Iniciando Chequeo de toda la configuracion...")
         await asyncio.sleep(2)
         await self.CheckLog(log_path)
-        await asyncio.sleep(2)
+        # await asyncio.sleep(2)
         await self.CheckTempDB(db=temp_db)
         #await self.CheckMainDB(main_db)
         self.logger.info("Chequeo finalizado.")
 
-    async def CheckLog(self, log_path: Path | str, max_lines: int = 200):
+    async def CheckLog(self, log_path: Path | str, max_lines: int = 1):
         self.logger.debug("Iniciando Chequeo de Log...")
         if not self.ValidatePath(log_path):
             self.logger.error(f"El archivo '{log_path}' no existe o no es un archivo valido (Solo texto).")
             return self.logger.error("Se ha encontrado un error en el chequeo del log.")
         else:
-            with open(log_path, "r+") as log:
-                mm = mmap.mmap(log.fileno(), 0)
-                total_lines = 0
-                while mm.readline():
-                    total_lines += 1
-
-                if total_lines >= max_lines:
-                    dumped_log = log.read()
-                    self.logger.warning(f"El archivo '{log_path}' tiene {total_lines} lineas.")
-                    self.logger.warning("Limpiando el archivo log...")
+            lines = self.ReadLines(log_path)[1]
+            if lines >= max_lines:
+                self.logger.warning(f"El archivo '{log_path}' tiene {lines} lineas cuando el maximo es {max_lines}.")
+                self.logger.warning("Limpiando el archivo log y generando una copia...")
+                log = open(log_path)
+                log_content = log.read()
+                log.close()
+                with open(log_path, "w+") as log:
                     log.write("")
-                    log.flush()
                     log.close()
-                    with open("log.txt", "a+") as log:
-                        log.write(dumped_log)
-                        self.logger.info(f"Se ha creado un archivo con la copia del ultimo log con el nombre {log.name} (Debido a que se ha limpiado).")
-                        log.close()
-                else:
-                    return self.logger.info("Chequeo de Log finalizado con exito.")
+                with open(f"log_dump_{datetime.now().date()}.txt", "w+") as log_copy:
+                    log_copy.write(log_content)
+                    self.logger.info(f"Se ha creado un archivo con la copia del ultimo log con el nombre '{log_copy.name}' (Debido a que se ha limpiado).")
+                    log_copy.close()
+            else:
+                return self.logger.info("Chequeo de Log finalizado con exito.")
 
     async def CheckTempDB(self, db_name: str, db_conn: Connection, max_elems: int = 500, max_size: int = 50000):
-        print(self.logger.info("Iniciando Chequeo de la base de datos temporal..."))
+        self.logger.info("Iniciando Chequeo de la base de datos temporal...")
         
         if max_size:
-            tempdb_size = self.GetFileSize(db_name)
+            tempdb_size = self.getFileSize(db_name)
             if tempdb_size >= max_size:
                 return self.logger.warning(f"La base de datos temporal tiene un tamaño de {tempdb_size} KB, supera el tamaño permitido.")
             else:
                 return self.logger.info("Chequeo de la base de datos temporal finalizado con exito.") 
         elif max_elems:
-            tables = [t for t in db_conn.execute('SELECT name FROM sqlite_master WHERE type= "table"')]     
+            self.tables = [t for t in db_conn.execute('SELECT * FROM sqlite_master WHERE type="table"')] 
             #TODO: La tabla 'sqlite_master' contiene todas las tablas de la base de datos
-            tempdb_elems = len(db_conn.execute(f"SELECT * FROM '{[t for t in tables]}'").fetchall())
+            tempdb_elems = len(db_conn.execute(f"SELECT * FROM '{[t for t in self.tables]}'").fetchall())
             if tempdb_elems >= max_elems:
-                db_conn.execute(f"DELETE FROM {[t for t in tables]}")
+                db_conn.execute(f"DELETE FROM {[t for t in self.tables]}")
                 self.logger.error(f"La base de datos temporal tiene {tempdb_elems} elementos, supera el numero de elementos permitido.")
                 return self.logger.warning(f"Borrados | {tempdb_elems} | elementos")
             else:
                 return self.logger.info("Chequeo de la base de datos temporal finalizado con exito.") 
         else:
+            print(self.tables)
             return self.logger.info("Chequeo de la base de datos temporal finalizado con exito")
 
     async def CheckTempDB(self, db: Connection, max_elems: int = 500, max_size: int = 50000):
         pass
 
-print(Checker.GetFileInfo("requeriments.txt"))
+print(Checker.getFileInfo("requeriments.txt"))

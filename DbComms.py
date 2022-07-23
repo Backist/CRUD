@@ -1,75 +1,27 @@
 import sqlite3 as sql
-from tabnanny import check
 import time as t
 import os.path #* Para saber todo acerca de un archivo (tamaño, tipo, historial de cambios, etc.)
 import os
-import checker
-
 #* import sqlalchemy para uso de db en API's o Webs
 
+from checker import cFormatter, Checker
+from colorama import Fore, Back, Style #, init
 from asyncio import run
-from colorama import Fore, Style, Back #, init
 from dataclasses import dataclass
 from datetime import datetime
 from platform import python_version
 from typing import NoReturn
 from json import dumps
 from pathlib import Path
+from hashlib import md5, sha1, sha224       #TODO: En orden de seguridad de encriptacion de menor a mayor ->  md5, sha1, sha256
 from random import choice, randint, sample
 from threading import Thread
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import generate_password_hash
 
 
 __all__: list[str] = ["User", "cFormatter", "Database"]     
 #TODO: Solo se importaran esos modulos o clases pero los metodos o funciones privados no seran importados
 
-
-def cFormatter(
-    string: str, 
-    color: Fore, 
-    style: Style = None, 
-    background: Back = None, 
-    random: bool = False, 
-    iter_colors: list[Fore] = []
-) -> str:
-    """
-    Formateador de texto en terminal.
-    Valido con cadenas de texto, listas de texto y docstrings.
-    """
-    
-    #init(autoreset= autoreset)
-
-    c = [Fore.BLACK, Fore.RED, Fore.BLUE, Fore.CYAN, Fore.GREEN, Fore.MAGENTA, Fore.YELLOW, Fore.WHITE]
-    s = [Style.DIM, Style.NORMAL, Style.BRIGHT]
-    b = [Back.BLACK, Back.RED, Back.BLUE, Back.CYAN, Back.GREEN, Back.MAGENTA, Back.YELLOW, Back.WHITE]
-
-    if (color is not None and not color in c) or (style is not None and not style in s) or (background is not None and not background in b):
-        return ValueError(cFormatter(f"Color o estilo o fondo no valido", color= Fore.RED))
-
-    else:
-
-        if iter_colors:
-            if len(iter_colors) == 0 or [x for x in iter_colors if x not in c]:
-                return TypeError(cFormatter("No se ha definido una lista de colores con los que iterar o algun color no es valido", color= Fore.RED))
-            else: 
-                letters = []
-                for chars in string:
-                    letters.append(f"{choice(iter_colors)}{chars}{Fore.RESET}")
-                return "".join(letters)
-
-        elif random:
-            rcolor = choice(c)
-            rstyle = choice(s)
-            rback = choice(b)
-            return f"{rcolor}{rstyle}{rback}{string}{Style.RESET_ALL}{Fore.RESET}{Back.RESET}"
-
-        elif color:
-            if background:
-                return f"{color}{background}{string}{Fore.RESET}{Back.RESET}"
-            elif style:
-                return f"{color}{style}{string}{Fore.RESET}{Style.RESET_ALL}"
-            else:
-                return f"{color}{string}{Fore.RESET}"
 
 def cls():
     if os.name == "nt":
@@ -102,9 +54,18 @@ class User:
             self.password: str = password
         self.UId = self._AsignIdentifier()
 
-    def encryptPassword(self, mode: str = "pbkdf2:sha256"):
-            encryp = generate_password_hash(self.password, mode, salt_length= 32)
+    def encryptPassword(self, mode: str = "sha1"):
+            encryp = generate_password_hash(self.password, mode, salt_length= 8)    #* 8 bytes de salt
             return encryp
+
+    def decryptPassword(self, password: str) -> bool:
+        """
+        Decifra la contraseña de un usuario previamete encriptada
+        """
+        return Checker.check_password_hash(self.password, password)
+
+    def exportUserToJson(self, path: str) -> NoReturn:
+        ...
 
     def _AsignIdentifier(self) -> int:
         """
@@ -224,12 +185,12 @@ class Database:
         self.userToken = user.token if user is not None else None
         try:
             self.log_path: Path = log_path if log_path is not None else Path("log.txt")
-        except not checker.Checker.ValidatePath(log_path):
+        except not Checker.ValidatePath(log_path):
             raise Database.DatabaseInitializationError(cFormatter("El archivo de log no existe o no es valido (Probablemente no sea un archivo o no de tipo texto)", color= Fore.RED))
         self.EntryDataEnabled: bool = None
         self.Running: bool = False
         self.CheckEntryDataEnabled()       #* Comprobamos si se pueden introducir datos en la base de datos
-        self.Checker = checker.Checker(self)
+        self.Checker = Checker(self)
         try:
             run(self.Checker.checkAll(self.log_path, self._InitTempDb()))
         except KeyboardInterrupt:
@@ -238,7 +199,6 @@ class Database:
                 color= Fore.YELLOW
                 )
             )
-        self.CloseConnection()
 
     @property
     def in_transaction(self):
@@ -294,8 +254,7 @@ class Database:
         username: str | User, 
         level: str = "INFO",
         timestamp: str | datetime = t.strftime('%Y-%m-%d %H:%M:%S') ,
-        special_info: list | tuple = None,
-        max_lines: int = 1000, 
+        special_info: list | tuple = None, 
     ) -> str | Exception:
         """Escribe cada evento en el archivo log.
         
@@ -377,7 +336,7 @@ class Database:
         self.conn.commit()
 
         if len(self.c.execute(f"SELECT * from users").fetchall()) >= max_elems:
-            self.delElems()
+            self.delAct()
             print(cFormatter("Eliminados 500 elementos para limpieza de la base de datos temporal"))
         else:
             pass
@@ -426,9 +385,11 @@ class Database:
                     self.EntryDataEnabled = False
                     return False
                 else:
-                    temp_db.execute("INSERT INTO users (UId, Username, Email, Password, Token, Created_at) VALUES (?, ?, ?, ?, ?, ?)", (self.user.UId ,self.user.username, self.user.email, self.user.encryptPassword(), self.user.token, self.user.created_at))
+                    temp_db.execute("INSERT INTO users (UId, Username, Email, Password, Token, Created_at) VALUES (?, ?, ?, ?, ?, ?)", (self.user.UId ,self.user.username, self.user.email, self.user.encryptPassword(mode= "sha1"), self.user.token, self.user.created_at))
                     print(cFormatter(f"Se ha añadido al usuario {self.user.username} con ID [{self.user.UId}] a usuarios permitidos", color= Fore.GREEN))
                     self._LogWritter(f"Se ha habilitado la entrada de datos", self.user.username, special_info= [self.user.token])
+                    temp_db.commit()
+                    temp_db.close()
                     self.EntryDataEnabled = True
                     return True
             else:
@@ -504,8 +465,6 @@ class Database:
                 print(cFormatter(f"Base de datos cerrada en {round(self.DbRunTime*1000, 2)} ms correctamente", color=Fore.GREEN))
         except Exception as error:
             print(cFormatter("No se ha iniciado una conexion con la base de datos", color=Fore.RED))
-
-
 
 
 if __name__ == "__main__":

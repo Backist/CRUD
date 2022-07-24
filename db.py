@@ -71,7 +71,7 @@ class User:
         }
         return userDict
 
-    def exportUser(self, exporTo: str = "JSON") -> NoReturn:
+    def exportUser(self, exporTo: str = "JSON") -> None:
         """
         Exporta un usuario al formato indicado, por defecto JSON.
         """
@@ -92,9 +92,10 @@ class User:
                 try:
                     with open(f"{self.username}.csv", 'w') as csvfile:
                         for k, v in tagDict.items():
-                            csvfile.write(f"{k},{v}")
+                            csvfile.write(f"{k},{v}\n")
+                        csvfile.write("\n")
                         for key in self._InternalDict().keys():
-                            csvfile.write(f"\n{key},{self._InternalDict()[key]}\n")
+                            csvfile.write(f"{key},{self._InternalDict()[key]}\n")
                         csvfile.close()
                     return #cFormatter(f"El usuario {self.username} ha sido exportado a formato CSV correctamente.", color= Fore.GREEN)
                 except IOError as ioe:
@@ -245,7 +246,7 @@ class Database:
         self.CheckEntryDataEnabled()       #* Comprobamos si se pueden introducir datos en la base de datos
         self.Checker = Checker(self)
         try:
-            run(self.Checker.checkAll(self.log_path, self._InitTempDb()))
+            run(self.Checker.checkAll(log_path= self.log_path, temp_db =self._InitTempDb()))
         except KeyboardInterrupt:
             raise DatabaseInitializationError(cFormatter(
                 "Se ha parado el chequeo de las configuraciones, inicializacion pausada.", 

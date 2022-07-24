@@ -1,0 +1,2 @@
+[2022-07-24 22:22:10][INFO] - | Alvaro (['8/x::MdhHIaDZXcF/2l9u']) | -> Se ha habilitado la entrada de datos
+[2022-07-24 22:22:48][INFO] - | Alvaro (['8/x::GfsDEFqQ9tj#Y*Ap']) | -> Se ha habilitado la entrada de datos

@@ -41,8 +41,6 @@ class User:
     Si necesitamos acceder a la base de datos, deberemos utilizar el metodo de clase `Database.CreateToken` para asignar a un usuario un token valido
     para acceder a la base de datos."""
 
-
-
     def __init__(self, username: str, password: str, email: str = None,ids_range: list[int] | tuple[int] = []):
         self.username: str = username
         self.email: str = email
@@ -94,9 +92,9 @@ class User:
                 try:
                     with open(f"{self.username}.csv", 'w') as csvfile:
                         for k, v in tagDict.items():
-                            csvfile.write(f"{k},{v}\n\n")
+                            csvfile.write(f"{k},{v}")
                         for key in self._InternalDict().keys():
-                            csvfile.write(f"{key},{self._InternalDict()[key]}\n")
+                            csvfile.write(f"\n{key},{self._InternalDict()[key]}\n")
                         csvfile.close()
                     return #cFormatter(f"El usuario {self.username} ha sido exportado a formato CSV correctamente.", color= Fore.GREEN)
                 except IOError as ioe:

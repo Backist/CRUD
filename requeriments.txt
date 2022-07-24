@@ -1,7 +1,11 @@
 import hashlib
 
 
+# pip install -r requeriments.txt
+# pip3 install -r requeriments.txt
+# to install en user space:
+# pip install -r requeriments.txt --user
+# pip3 install -r requeriments.txt --user
 colorama~=0.4.4
-werkzeug.security
-hashlib
+werkzeug.security~=0.11.1
 

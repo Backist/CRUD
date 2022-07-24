@@ -2,6 +2,7 @@ import sqlite3 as sql
 import time as t
 import os.path #* Para saber todo acerca de un archivo (tamaño, tipo, historial de cambios, etc.)
 import os
+import yaml
 #* import sqlalchemy para uso de db en API's o Webs
 
 from checker import cFormatter, Checker
@@ -13,7 +14,7 @@ from platform import python_version
 from typing import NoReturn
 from json import dumps
 from pathlib import Path
-from hashlib import md5, sha1, sha224       #TODO: En orden de seguridad de encriptacion de menor a mayor ->  md5, sha1, sha256
+#from hashlib import md5, sha1, sha224       #TODO: En orden de seguridad de encriptacion de menor a mayor ->  md5, sha1, sha256
 from random import choice, randint, sample
 from threading import Thread
 from werkzeug.security import generate_password_hash
@@ -76,26 +77,56 @@ class User:
         """
         Exporta un usuario al formato indicado, por defecto JSON.
         """
-        valid_fmt = ["JSON", "CSV", "TXT", "XML"]
+        valid_fmt = ["JSON", "CSV", "TXT", "XML", "YAML"]
+
         if not exporTo.upper() in valid_fmt:
             raise User.UserError(cFormatter(f"El formato de exportacion indicado no es valido. Formatos validos: {[f for f in valid_fmt]}", color= Fore.RED))
         else:
-            if exporTo.upper() == "JSON":
+            tagDict = {"DumpMethod": exporTo.upper(), "CreatedAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+
+            if exporTo.upper() == "JSON" or exporTo == "TXT":
                 with open(f"{self.username}.json", "w") as f:
+                    f.write(f"{dumps(tagDict, indent= 4)},\n")
                     f.write(str(self))
-                    return #cFormatter(f"El usuario {self.username} ha sido exportado a formato JSON correctamente.", color= Fore.GREEN)
+                    f.close()
+                return #cFormatter(f"El usuario {self.username} ha sido exportado a formato JSON correctamente.", color= Fore.GREEN)
             elif exporTo.upper() == "CSV":
                 try:
                     with open(f"{self.username}.csv", 'w') as csvfile:
+                        for k, v in tagDict.items():
+                            csvfile.write(f"{k},{v}\n\n")
                         for key in self._InternalDict().keys():
                             csvfile.write(f"{key},{self._InternalDict()[key]}\n")
-                        return #cFormatter(f"El usuario {self.username} ha sido exportado a formato CSV correctamente.", color= Fore.GREEN)
-                except IOError:
-                    print("I/O error")
+                        csvfile.close()
+                    return #cFormatter(f"El usuario {self.username} ha sido exportado a formato CSV correctamente.", color= Fore.GREEN)
+                except IOError as ioe:
+                    print(f"I/O error during export user to CSV: {ioe}")
+                    return
             elif exporTo.upper() == "XML":
+                # with open(f"{self.username}.xml", "w+", newline= '') as csvFile:
+                #     csvWriter = csv.writer(csvFile, delimiter = ' ')
+                #     for elem in self._InternalDict():
+                #         csvWriter.writerow([elem.strip()])
                 with open(f"{self.username}.xml", "w") as f:
+                    f.write(f"{dumps(tagDict, indent= 4)}\n")
                     f.write(str(self))
-                    return #cFormatter(f"El usuario {self.username} ha sido exportado a formato XML correctamente.", color= Fore.GREEN)
+                    f.close()
+                return #cFormatter(f"El usuario {self.username} ha sido exportado a formato XML correctamente.", color= Fore.GREEN)
+            elif exporTo.upper() == "YAML":
+                with open(f"{self.username}.yaml", "w") as f:
+                    yaml.dump(tagDict, f)
+                    yaml.dump(
+                        self._InternalDict(), 
+                        f,
+                        allow_unicode=True, 
+                        default_flow_style=False, 
+                        encoding= 'utf-8', 
+                        sort_keys=True, 
+                        explicit_start= True, 
+                        explicit_end= True,
+                    )
+                    f.close()
+                return #cFormatter(f"El usuario {self.username} ha sido exportado a formato YAML correctamente.", color= Fore.GREEN)
             else:
                 raise User.UserError(cFormatter("Error al exportar el usuario", color= Fore.RED))
         
@@ -517,4 +548,6 @@ if __name__ == "__main__":
     db = Database(u)
     print(db.is_operative)
     print(db.runtime)
+    u.exportUser("yaml")
+    u.exportUser("json")
     u.exportUser("csv")

@@ -2,9 +2,9 @@ import sqlite3 as sql
 import time as t
 import os.path #* Para saber todo acerca de un archivo (tamaño, tipo, historial de cambios, etc.)
 import os
-import yaml
 #* import sqlalchemy para uso de db en API's o Webs
 
+from errors import *
 from checker import cFormatter, Checker
 from colorama import Fore, Back, Style #, init
 from asyncio import run
@@ -18,6 +18,11 @@ from pathlib import Path
 from random import choice, randint, sample
 from threading import Thread
 from werkzeug.security import generate_password_hash
+
+try:
+    import yaml
+except ImportError:
+    os.system("pip install pyyaml")
 
 
 __all__: list[str] = ["User", "cFormatter", "Database"]     
@@ -37,11 +42,7 @@ class User:
     Si necesitamos acceder a la base de datos, deberemos utilizar el metodo de clase `Database.CreateToken` para asignar a un usuario un token valido
     para acceder a la base de datos."""
 
-    class UserError(Exception):
-        """
-        Clases para manejar los errores u excepciones de la clase User.
-        """
-        pass
+
 
     def __init__(self, username: str, password: str, email: str = None,ids_range: list[int] | tuple[int] = []):
         self.username: str = username
@@ -57,7 +58,7 @@ class User:
         self.secret_password = "*" * len(self.password[:-4])+self.password[-4:]  #* Si se printea el objeto, se muestran los cuatro ultimos caracteres de la contraseña
 
     def encryptPassword(self, mode: str = "sha1"):
-            encryp = generate_password_hash(self.password, mode, salt_length= 8)    #* 8 bytes de salt
+            encryp = generate_password_hash(self.password, mode, salt_length= 6)    #* 6 bytes de salt
             return encryp
 
     def _InternalDict(self) -> dict:
@@ -175,6 +176,57 @@ class User:
         return t.strftime('%Y-%m-%d %H:%M:%S')
                 #? datetime.datetime.now()
 
+class _Clock:
+
+    ClockErrorMsg = cFormatter("El cronometro no esta activo. (Probablemente porque no se ha iniciado una conexion con la base de datos)", color= Fore.RED)
+
+    def __init__(self, refresh_timer_ms: int = 500):
+        self. clockRefresh = refresh_timer_ms
+        self._initTime = datetime.now()
+        self._active = False
+
+    @property
+    def active(self):
+        return self._active if self._active else print(self.ClockErrorMsg)
+
+    def _calc_passed_time_format(self):
+        passed_seconds = (datetime.now() - self._initTime).total_seconds()
+        return self._primitive_timer(int(passed_seconds))
+        
+    def _primitive_timer(self, segundos):
+        horas = int(segundos / 60 / 60)
+        segundos -= horas*60*60
+        minutos = int(segundos/60)
+        segundos -= minutos*60
+        return f"{horas:02d}:{minutos:02d}:{segundos:02d}"
+    
+    def iniTimer(self):
+        while True:
+            self._active = True
+            print(self._calc_passed_time_format(), end= '\r')
+        
+    def pauseTimer(self):
+        if self.active:
+            self._initTime = datetime.now()
+            self._active = False
+        else:
+            return print(self.ClockErrorMsg)
+
+    def activeTimer(self):
+        """Activa el cronometro si esta pausado.\nTambien lo hace si esta parado pero es mejor utilizar el metodo ``.timer()``"""
+        if self.active:
+            pass
+        else:
+            self._active = True
+            return self._calc_passed_time_format()
+
+    def resetTimer(self):
+        if self._active:
+            self._initTime = datetime.now()
+            print(cFormatter("El cronometro se ha reseteado", color= Fore.GREEN))
+        else:
+            return print(self.ClockErrorMsg)
+
 
 class Database:
     """
@@ -184,71 +236,13 @@ class Database:
     El acceso a la base de datos
     """
 
-    class DatabaseInitializationError(Exception):
-        """
-        Clases para manejar los errores u excepciones de la clase Database.
-        """
-        pass
-
-    class Clock:
-
-        ClockErrorMsg = cFormatter("El cronometro no esta activo. (Probablemente porque no se ha iniciado una conexion con la base de datos)", color= Fore.RED)
-
-        def __init__(self, refresh_timer_ms: int = 500):
-            self.Clockrefresh = refresh_timer_ms
-            self._initTime = datetime.now()
-            self._active = False
-
-        @property
-        def active(self):
-            return self._active if self._active else print(self.ClockErrorMsg)
-
-        def _calc_passed_time_format(self):
-            passed_seconds = (datetime.now() - self._initTime).total_seconds()
-            return self._primitive_timer(int(passed_seconds))
-            
-        def _primitive_timer(self, segundos):
-            horas = int(segundos / 60 / 60)
-            segundos -= horas*60*60
-            minutos = int(segundos/60)
-            segundos -= minutos*60
-            return f"{horas:02d}:{minutos:02d}:{segundos:02d}"
-        
-        def timer(self):
-            while True:
-                self._active = True
-                print(self._calc_passed_time_format(), end= '\r')
-            
-        def pauseTimer(self):
-            if self.active:
-                self._initTime = datetime.now()
-                self._active = False
-            else:
-                return print(self.ClockErrorMsg)
-
-        def activeTimer(self):
-            """Activa el cronometro si esta pausado.\nTambien lo hace si esta parado pero es mejor utilizar el metodo ``.timer()``"""
-            if self.active:
-                pass
-            else:
-                self._active = True
-                return self._calc_passed_time_format()
-
-        def resetTimer(self):
-            if self._active:
-                self._initTime = datetime.now()
-                print(cFormatter("El cronometro se ha reseteado", color= Fore.GREEN))
-            else:
-                return print(self.ClockErrorMsg)
-
-
     def __init__(self, user: User = None, log_path: Path = None):
         self.user: User | str = user if user is not None else "Invitado"
         self.userToken = user.token if user is not None else None
         try:
             self.log_path: Path = log_path if log_path is not None else Path("log.txt")
         except not Checker.ValidatePath(log_path):
-            raise Database.DatabaseInitializationError(cFormatter("El archivo de log no existe o no es valido (Probablemente no sea un archivo o no de tipo texto)", color= Fore.RED))
+            raise DatabaseInitializationError(cFormatter("El archivo de log no existe o no es valido (Probablemente no sea un archivo o no de tipo texto)", color= Fore.RED))
         self.EntryDataEnabled: bool = None
         self.Running: bool = False
         self.CheckEntryDataEnabled()       #* Comprobamos si se pueden introducir datos en la base de datos
@@ -256,7 +250,7 @@ class Database:
         try:
             run(self.Checker.checkAll(self.log_path, self._InitTempDb()))
         except KeyboardInterrupt:
-            raise Database.DatabaseInitializationError(cFormatter(
+            raise DatabaseInitializationError(cFormatter(
                 "Se ha parado el chequeo de las configuraciones, inicializacion pausada.", 
                 color= Fore.YELLOW
                 )
@@ -268,14 +262,12 @@ class Database:
         Devuelve True si hay una transaccion en curso
         """
         return self.conn.in_transaction() if self.is_operative else print(cFormatter("No se ha iniciado la base de datos", color= Fore.RED))
-
     @property
     def is_operative(self) -> list[bool | str]:
         """
         Devuelve el estado de la base de datos
         """
         return self.Running
-
     @property
     def runtime(self):
         """Devuelve el tiempo que lleva la base de datos encendida"""
@@ -360,10 +352,10 @@ class Database:
             self._DbRunTimeThread.join()
 
     
-    def _Clock(self) -> Clock | NoReturn:
+    def _Clock(self) -> NoReturn:
         """Funcion que se encarga de llevar y actualizar el tiempo que lleva la base de datos operativa"""
-        timer = self.Clock()
-        self.DbRunTime = timer.timer()
+        timer = _Clock()
+        self.DbRunTime = timer.iniTimer()
 
 
     def _InitTempDb(self, max_elems: int = 500) -> sql.Connection:

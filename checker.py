@@ -274,18 +274,18 @@ class Checker:
                                     self.max_size_kb = config[ck][cv]
                                     return True
     
-    async def checkAll(self, log_path: Path | str, temp_db: Connection, main_db: Connection = None):
+    async def checkAll(self, *kwargs, log_path: Path | str, temp_db: Connection, main_db: Connection = None):
         """Coroutine para verificar con un solo metodo toda la configuracoin del log y bases de datos.\n
         Segun si se importa una configuracion o con los valores predeterminados."""
         self.logger.info("Iniciando Chequeo de toda la configuracion...")
         await asyncio.sleep(2)
-        await self.CheckLog(log_path)
+        await self.CheckLog(*kwargs, log_path=log_path)
         # await asyncio.sleep(2)
-        await self.CheckTempDB(db=temp_db)
-        #await self.CheckMainDB(main_db)
+        await self.CheckTempDB(*kwargs, db=temp_db)
+        #await self.CheckMainDB(*kwargs, main_db)
         self.logger.info("Chequeo finalizado.")
 
-    async def CheckLog(self, log_path: Path | str, max_lines: int = 500):
+    async def CheckLog(self, log_path: Path | str, max_lines: int = 5, log_dump_loc: Path | str = None):
         self.logger.debug("Iniciando Chequeo de Log...")
         if not self.ValidatePath(log_path):
             self.logger.error(f"El archivo '{log_path}' no existe o no es un archivo valido (Solo texto).")
@@ -301,10 +301,15 @@ class Checker:
                 with open(log_path, "w+") as log:
                     log.write("")
                     log.close()
-                with open(f"log_dump_{datetime.now().date()}.txt", "w+") as log_copy:
-                    log_copy.write(log_content)
-                    self.logger.info(f"Se ha creado un archivo con la copia del ultimo log con el nombre '{log_copy.name}' (Debido a que se ha limpiado).")
-                    log_copy.close()
+                if log_dump_loc is not None and self.ValidatePath(log_dump_loc):
+                    if isinstance(log_dump_loc, str):
+                        log_dump_loc = Path(log_dump_loc)
+                        pass
+                    relative_path = os.path.join(log_dump_loc, f"log_dump_{t.strftime('%Y-%m-%d_%H-%M-%S')}.txt")
+                    with open(relative_path, "w+") as log_copy:
+                        log_copy.write(log_content)
+                        self.logger.info(f"Se ha creado un archivo con la copia del ultimo log con el nombre '{log_copy.name}' (Debido a que se ha limpiado).")
+                        log_copy.close()
             else:
                 return self.logger.info("Chequeo de Log finalizado con exito.")
 
@@ -333,5 +338,3 @@ class Checker:
 
     async def CheckTempDB(self, db: Connection, max_elems: int = 500, max_size_kb: int = 50000):
         pass
-
-print(Checker.getInfo("requeriments.txt"))

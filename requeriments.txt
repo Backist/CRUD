@@ -1,2 +1,7 @@
+import hashlib
+
+
 colorama~=0.4.4
 werkzeug.security
+hashlib
+

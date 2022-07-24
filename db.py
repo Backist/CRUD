@@ -53,20 +53,52 @@ class User:
         else:
             self.password: str = password
         self.UId = self._AsignIdentifier()
+        self.secret_password = "*" * len(self.password[:-4])+self.password[-4:]  #* Si se printea el objeto, se muestran los cuatro ultimos caracteres de la contraseña
 
     def encryptPassword(self, mode: str = "sha1"):
             encryp = generate_password_hash(self.password, mode, salt_length= 8)    #* 8 bytes de salt
             return encryp
 
-    def decryptPassword(self, password: str) -> bool:
+    def _InternalDict(self) -> dict:
         """
-        Decifra la contraseña de un usuario previamete encriptada
+        Crea un diccionario con los datos de un usuario para ser almacenado en la base de datos.
         """
-        return Checker.check_password_hash(self.password, password)
+        userDict = {
+            "username": self.username,
+            "email": self.email,
+            "password": (self.secret_password, (self.encryptPassword())),
+            "UId": self.UId,
+            "created_at": self.created_at
+        }
+        return userDict
 
-    def exportUserToJson(self, path: str) -> NoReturn:
-        ...
-
+    def exportUser(self, exporTo: str = "JSON") -> NoReturn:
+        """
+        Exporta un usuario al formato indicado, por defecto JSON.
+        """
+        valid_fmt = ["JSON", "CSV", "TXT", "XML"]
+        if not exporTo.upper() in valid_fmt:
+            raise User.UserError(cFormatter(f"El formato de exportacion indicado no es valido. Formatos validos: {[f for f in valid_fmt]}", color= Fore.RED))
+        else:
+            if exporTo.upper() == "JSON":
+                with open(f"{self.username}.json", "w") as f:
+                    f.write(str(self))
+                    return #cFormatter(f"El usuario {self.username} ha sido exportado a formato JSON correctamente.", color= Fore.GREEN)
+            elif exporTo.upper() == "CSV":
+                try:
+                    with open(f"{self.username}.csv", 'w') as csvfile:
+                        for key in self._InternalDict().keys():
+                            csvfile.write(f"{key},{self._InternalDict()[key]}\n")
+                        return #cFormatter(f"El usuario {self.username} ha sido exportado a formato CSV correctamente.", color= Fore.GREEN)
+                except IOError:
+                    print("I/O error")
+            elif exporTo.upper() == "XML":
+                with open(f"{self.username}.xml", "w") as f:
+                    f.write(str(self))
+                    return #cFormatter(f"El usuario {self.username} ha sido exportado a formato XML correctamente.", color= Fore.GREEN)
+            else:
+                raise User.UserError(cFormatter("Error al exportar el usuario", color= Fore.RED))
+        
     def _AsignIdentifier(self) -> int:
         """
         Asigna un identificador a un usuario
@@ -94,13 +126,12 @@ class User:
         
 
     def __str__(self) -> str:
-        secret_password = "*" * len(self.password[:-4])+self.password[-4:]  #* Si se printea el objeto, se muestran los cuatro ultimos caracteres de la contraseña
         userDict = {
             "Username": self.username,
             "Email": self.email,
             "UId": self.UId,
             "Token": self.token if self.token is not None else "No posee token",
-            "Password": secret_password,
+            "Password": self.secret_password,
             "Created at": self.created_at
         }
         return dumps(userDict, indent= 4)
@@ -486,3 +517,4 @@ if __name__ == "__main__":
     db = Database(u)
     print(db.is_operative)
     print(db.runtime)
+    u.exportUser("csv")

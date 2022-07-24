@@ -189,20 +189,20 @@ class Checker:
             return Checker.ValidatePath(StrOrPath)
 
     @staticmethod
-    def getFileSize(filePathOrStr: Path | str):
+    def getSize(filePathOrStr: Path | str):
         if Checker.ValidatePath(filePathOrStr):
             return round(os.path.getsize(filePathOrStr)/1000, 2)
         else:
             return Checker.ValidatePath(filePathOrStr)
 
     @staticmethod
-    def getFileInfo(filePathOrStr: Path | str) -> dict:
+    def getInfo(filePathOrStr: Path | str) -> dict:
         if Checker.ValidatePath(filePathOrStr):
             finfo = {}
             afile = t.strftime(Checker.TIME_FMT, t.localtime(os.path.getatime(filePathOrStr)))
             mfile = t.strftime(Checker.TIME_FMT, t.localtime(os.path.getmtime(filePathOrStr)))
             cfile = t.strftime(Checker.TIME_FMT, t.localtime(os.path.getctime(filePathOrStr)))    #* Devuelve la hora de creacion del archivo
-            sfile = Checker.getFileSize(filePathOrStr)
+            sfile = Checker.getSize(filePathOrStr)
             ext = os.path.splitext(filePathOrStr)[1]   #* Divide la ruta en dos, donde el segundo elemento es la ext.
             with open(filePathOrStr, "r+") as file:
                 Tobytes = Path(filePathOrStr).read_bytes() if not isinstance(filePathOrStr, Path) else filePathOrStr.read_bytes()
@@ -312,7 +312,7 @@ class Checker:
         self.logger.info("Iniciando Chequeo de la base de datos temporal...")
         
         if max_size_kb:
-            tempdb_size = self.getFileSize(db_name)
+            tempdb_size = self.getSize(db_name)
             if tempdb_size >= max_size_kb:
                 return self.logger.warning(f"La base de datos temporal tiene un tamaño de {tempdb_size} KB, supera el tamaño permitido.")
             else:
@@ -334,4 +334,4 @@ class Checker:
     async def CheckTempDB(self, db: Connection, max_elems: int = 500, max_size_kb: int = 50000):
         pass
 
-print(Checker.getFileInfo("requeriments.txt"))
+print(Checker.getInfo("requeriments.txt"))

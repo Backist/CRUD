@@ -1,4 +1,4 @@
-import DbComms as D
+import db as D
 from checker import Checker
 
 u = D.User("Alvao", "Alvaromon1", "asd")

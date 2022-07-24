@@ -7,4 +7,3 @@
 colorama~=0.4.4
 werkzeug.security~=0.11.1
 hashlib~=1.0.0
-

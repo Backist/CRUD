@@ -19,6 +19,9 @@ To do this, simply type in the shell:
   - ``pip3 install -r requeriments.txt`` to install all dependencies in global context
   - ``pip3 install -r requeriments.txt --user`` to install the program dependencies in global context.
 
+#### External Resources:
+[==> Standard Library <==](https://docs.python.org/3/library/)
+
 > **IMPORTANT:** This is my first time that together with the use of a database with a user interface, therefore, the program is likely or not to be well written or simply the program can be improved or simplified
 
 

@@ -10,7 +10,6 @@ from colorama import Fore, Back, Style #, init
 from asyncio import run
 from dataclasses import dataclass
 from datetime import datetime
-from platform import python_version
 from typing import NoReturn
 from json import dumps
 from pathlib import Path
@@ -522,16 +521,6 @@ class Database:
 
 
 if __name__ == "__main__":
-
-    pyver = python_version()
-    sysname = os.name
-
-    if sysname.upper() != "NT":
-        print(cFormatter("Este programa esta probado en dispositivos Windows. Puede experimentar problemas si ejecuta el programa en otro sistema operativo", color= Fore.YELLOW))
-        exit()
-    if pyver < "3.10.2":
-        print(cFormatter(f"Esta aplicacion requiere Python 3.10.2 o superior. {cFormatter(f'Version actual: {pyver}', color= Fore.MAGENTA)}", color=Fore.RED))
-        exit()
 
     #TODO: <--------- TESTING ---------->
 

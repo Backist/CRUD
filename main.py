@@ -5,7 +5,7 @@ from PyQt5.QtGui import (QBrush, QColor, QConicalGradient, QCursor, QFont, QFont
 from PyQt5.QtWidgets import *
 
 
-from GUI.SplashScreen.splashUI import SplashScreenUI
+from GUI.SplashScreen.splashUIModel2 import SplashScreenUI
 from GUI.Login.LoginUI import LoginUI
 # from GUI.Register.RegisterUI import RegisterUI
 # from GUI.MainWindow.mainWindow import MainWindow

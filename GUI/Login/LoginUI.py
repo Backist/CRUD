@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'mainLoginUI.ui'
+# LoginScreen implementation generated from reading ui file 'LoginScreenUI.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.7
 #
@@ -11,20 +11,20 @@ import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QMessageBox
 
-# __all__ = ['LoginUI']
+# __all__ = ['LoginScreenUI']
 
 class LoginUI(object):
-    def setupUi(self, Form):
-        #* <----------   Form is the main window that must be closed to close the program    ---------->
-        Form.setObjectName("Form")
-        Form.resize(650, 460)
+    def setupUi(self, LoginScreen):
+        #* <----------   LoginScreen is the main window that must be closed to close the program    ---------->
+        LoginScreen.setObjectName("LoginScreen")
+        LoginScreen.resize(650, 460)
         #* <----------    Set the window to be in the center of the screen and hide the main window (only display the main widget)    ---------->
-        Form.setWindowFlags(QtCore.Qt.FramelessWindowHint)
-        Form.setAttribute(QtCore.Qt.WA_TranslucentBackground)
-        Form.setWindowTitle("Master Panel")
+        LoginScreen.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        LoginScreen.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        LoginScreen.setWindowTitle("Master Panel")
 
-        self.widget = QtWidgets.QWidget(Form)
-        self.widget.setWindowTitle("Login Panel (Hidded window)")
+        self.widget = QtWidgets.QWidget(LoginScreen)
+        self.widget.setWindowTitle("Login Panel")
         self.widget.setGeometry(QtCore.QRect(40, 40, 600, 410))
         font = QtGui.QFont()
         font.setBold(False)
@@ -212,35 +212,34 @@ class LoginUI(object):
 
 
         #TODO: Adding blur and shades to labels and buttons
-        self.loginLabel.setGraphicsEffect(QtWidgets.QGraphicsDropShadowEffect(blurRadius=5, xOffset=0, yOffset=0))
-        self.loginButton.setGraphicsEffect(QtWidgets.QGraphicsDropShadowEffect(blurRadius=25, xOffset=0, yOffset=0))
-        self.widget.setGraphicsEffect(QtWidgets.QGraphicsDropShadowEffect(blurRadius=25, xOffset=0, yOffset=0))
+        self.loginButton.setGraphicsEffect(QtWidgets.QGraphicsDropShadowEffect(blurRadius=5, xOffset=0, yOffset=0))
+        self.widget.setGraphicsEffect(QtWidgets.QGraphicsDropShadowEffect(blurRadius=10, xOffset=0, yOffset=0))
 
-        self.retranslateUi(Form)
-        QtCore.QMetaObject.connectSlotsByName(Form)
+        self.retranslateUi(LoginScreen)
+        QtCore.QMetaObject.connectSlotsByName(LoginScreen)
 
-    def retranslateUi(self, Form):
+    def retranslateUi(self, LoginScreen):
         _translate = QtCore.QCoreApplication.translate
-        Form.setWindowTitle(_translate("Form", "Form"))
-        self.loginLabel.setText(_translate("Form", "Log In"))
-        self.usernameLabel.setPlaceholderText(_translate("Form", "Username"))
-        self.passwordLabel.setPlaceholderText(_translate("Form", "Password"))
-        self.loginButton.setText(_translate("Form", "Log In"))
-        self.forgetButton.setText(_translate("Form", "Forget Password or username"))
-        self.label.setText(_translate("Form", "Welcome"))
-        self.StyleIcon.setText(_translate("Form", "­"))
-        self.label_4.setText(_translate("Form", "to my DataBase"))
-        self.exitButton.setText(_translate("Form", "❌"))
-        self.naccButton.setText(_translate("Form", "New account"))
+        LoginScreen.setWindowTitle(_translate("LoginScreen", "LoginScreen"))
+        self.loginLabel.setText(_translate("LoginScreen", "Log In"))
+        self.usernameLabel.setPlaceholderText(_translate("LoginScreen", "Username"))
+        self.passwordLabel.setPlaceholderText(_translate("LoginScreen", "Password"))
+        self.loginButton.setText(_translate("LoginScreen", "Log In"))
+        self.forgetButton.setText(_translate("LoginScreen", "Forget Password or username"))
+        self.label.setText(_translate("LoginScreen", "Welcome"))
+        self.StyleIcon.setText(_translate("LoginScreen", "­"))
+        self.label_4.setText(_translate("LoginScreen", "to my DataBase"))
+        self.exitButton.setText(_translate("LoginScreen", "❌"))
+        self.naccButton.setText(_translate("LoginScreen", "New account"))
 
     def CloseUI(self):
-        Form.destroy(True)
+        self.widget.destroy(True)
         sys.exit()      
 
 if __name__ == "__main__":
         app = QtWidgets.QApplication(sys.argv)
-        Form = QtWidgets.QWidget()
+        LoginScreen = QtWidgets.QWidget()
         ui = LoginUI()
-        ui.setupUi(Form)
-        Form.show()
+        ui.setupUi(LoginScreen)
+        LoginScreen.show()
         sys.exit(app.exec_())

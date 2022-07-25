@@ -11,10 +11,8 @@
 import sys
 from PyQt5.QtCore import (QCoreApplication, QMetaObject, QRect, Qt)
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QWidget, QFrame, QLabel, QProgressBar, QApplication, QVBoxLayout
-# calling __init__ __version__
-
-# __all__ = ['SplashScreenUI']
+from PyQt5.QtWidgets import *
+import os
 
 class SplashScreenUI(object):
     def setupUi(self, SplashScreen):
@@ -100,17 +98,9 @@ class SplashScreenUI(object):
 
     def retranslateUi(self, SplashScreen):
         SplashScreen.setWindowTitle(QCoreApplication.translate("SplashScreen", u"MainWindow", None))
-        self.label_title.setText(QCoreApplication.translate("SplashScreen", u"<strong>YOUR</strong> APP NAME", None))
+        self.label_title.setText(QCoreApplication.translate("SplashScreen", u"<strong>CRUD</strong>", None))
         self.label_description.setText(QCoreApplication.translate("SplashScreen", u"<strong>APP</strong> DESCRIPTION", None))
         self.label_loading.setText(QCoreApplication.translate("SplashScreen", u"loading...", None))
-        self.label_credits.setText(QCoreApplication.translate("SplashScreen", u"<strong>Version</strong>: 0.0.1}", None))
+        self.label_credits.setText(QCoreApplication.translate("SplashScreen", u"<strong>Version</strong>: {}".format(None), None))
     # retranslateUi
 
-
-if __name__ == "__main__":
-        app = QApplication(sys.argv)
-        Form = QWidget()
-        ui = SplashScreenUI()
-        ui.setupUi(Form)
-        Form.show()
-        sys.exit(app.exec_())

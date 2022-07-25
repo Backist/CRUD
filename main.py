@@ -18,20 +18,17 @@ counter = 0
 class MainWindow(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
-        # self.ui = MainWindowUI()
-        # self.ui.setupUi(self)
+        self.ui = LoginUI()
+        self.ui.setupUi(self)
 
-# SPLASH SCREEN
+
 class SplashScreen(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
         self.ui = SplashScreenUI()
         self.ui.setupUi(self)
 
-        ## UI ==> INTERFACE CODES
-        ########################################################################
-
-        ## REMOVE TITLE BAR
+        #* REMOVE Master Window
         self.setWindowFlag(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
@@ -47,17 +44,19 @@ class SplashScreen(QMainWindow):
         ## QTIMER ==> START
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.progress)
-        # TIMER IN MILLISECONDS
+        #* timer in MILISECONDS
         self.timer.start(35)
 
         # CHANGE DESCRIPTION
 
         # Initial Text
-        self.ui.label_description.setText("<strong>WELCOME</strong> TO MY APPLICATION")
+        self.ui.label_description.setText("<strong>WELCOME</strong> TO MY DATABASE")
 
         # Change Texts
-        QtCore.QTimer.singleShot(1500, lambda: self.ui.label_description.setText("<strong>LOADING</strong> DATABASE"))
-        QtCore.QTimer.singleShot(3000, lambda: self.ui.label_description.setText("<strong>LOADING</strong> USER INTERFACE"))
+        QtCore.QTimer.singleShot(1000, lambda: self.ui.label_description.setText("<strong>SEARCHING FOR</strong> UPDATES"))
+        QtCore.QTimer.singleShot(2000, lambda: self.ui.label_description.setText("<strong>LOADING</strong> DATABASE"))
+        QtCore.QTimer.singleShot(2700, lambda: self.ui.label_description.setText("<strong>INITIALIZING</strong> CONFIGURATION"))
+        QtCore.QTimer.singleShot(3300, lambda: self.ui.label_description.setText("<strong>LOADING</strong> USER INTERFACE"))
 
 
         ## SHOW ==> MAIN WINDOW
@@ -68,30 +67,23 @@ class SplashScreen(QMainWindow):
     ## ==> APP FUNCTIONS
     ########################################################################
     def progress(self):
-
         global counter
 
-        # SET VALUE TO PROGRESS BAR
+        #* pass Counter to Progress Bar
         self.ui.progressBar.setValue(counter)
 
-        # CLOSE SPLASH SCREE AND OPEN APP
-        if counter > 100:
-            # STOP TIMER
+        #* Close SlapshScreen and open APP
+        if counter >= 100:
             self.timer.stop()
-
-            # SHOW MAIN WINDOW
+            #* SHOW MAIN WINDOW
             self.main = MainWindow()
             self.main.show()
-
-            # CLOSE SPLASH SCREEN
+            #* Close SplashScreen
             self.close()
-
-        # INCREASE COUNTER
-        counter += 1
-
-
-
-
+        else:
+            #* INCREASE COUNTER
+            counter += 1
+        
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = SplashScreen()

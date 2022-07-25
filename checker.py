@@ -2,7 +2,6 @@ import asyncio
 import logging
 import os
 import mmap
-import logging
 import time as t
 
 from colorama import Fore, Back, Style #, init
@@ -275,7 +274,7 @@ class Checker:
                                     return True
     
     async def checkAll(self, *kwargs, log_path: Path | str, temp_db: Connection, main_db: Connection = None):
-        """Coroutine para verificar con un solo metodo toda la configuracoin del log y bases de datos.\n
+        """Coroutine para verificar con un solo metodo toda la configuracion del log y bases de datos.\n
         Segun si se importa una configuracion o con los valores predeterminados."""
         self.logger.info("Iniciando Chequeo de toda la configuracion...")
         await asyncio.sleep(2)
@@ -336,5 +335,8 @@ class Checker:
             print(self.tables)
             return self.logger.info("Chequeo de la base de datos temporal finalizado con exito")
 
-    async def CheckTempDB(self, db: Connection, max_elems: int = 500, max_size_kb: int = 50000):
+    async def CheckMainDB(self, db: Connection, max_elems: int = 500, max_size_kb: int = 50000):
         pass
+
+
+print(Checker.getInfo("log.txt"))

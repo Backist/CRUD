@@ -2,23 +2,28 @@
 
 import sys
 from colorama import Fore
-from PyQt5 import QtCore
-# from PyQt5.QtCore import (QCoreApplication, QPropertyAnimation, QDate, QDateTime, QMetaObject, QObject, QPoint, QRect, QSize, QTime, QUrl, Qt, QEvent)
-from PyQt5.QtGui import (QBrush, QColor, QConicalGradient, QCursor, QFont, QFontDatabase, QIcon, QKeySequence, QLinearGradient, QPalette, QPainter, QPixmap, QRadialGradient)
+
+from PyQt5.QtGui import (
+    QBrush, QColor, QConicalGradient, QCursor, QFont, QFontDatabase, QIcon, QKeySequence, 
+    QLinearGradient, QPalette, QPainter, QPixmap, QRadialGradient
+)
+from PyQt5.QtCore import (QTimer, Qt, QCoreApplication, QPropertyAnimation, QPoint, QSize, QUrl,
+    QDate, QDateTime, QMetaObject, QObject, QPoint, QRect, QSize, QTime, QUrl, Qt, QEvent
+)
 from PyQt5.QtWidgets import *
 
+
 from errors import *
-from GUI.SplashScreen.splashUIModel2 import SplashScreenUI
+from utils import *
+from GUI.SplashScreen.splashUI import SplashScreenUI
 from GUI.Login.LoginUI import LoginUI
+# from GUI.Register.RegisterUI import registerUI
+# from GUI.MainWindow.MainWindowUI import mainWindowUI
 from db import Database
-from utils import cFormatter
 
-# from GUI.Register.RegisterUI import RegisterUI
-# from GUI.MainWindow.mainWindow import MainWindow
-
-
-#TODO: Globals
+#TODO: Globals and constants
 counter = 0
+CRUD_ICON = 'GUI\Icons\CRUDIcon.png'
 
 
 # class RegisterWindow(QMainWindow):
@@ -46,11 +51,18 @@ class LoginWindow(QMainWindow):
     def checkCredents(self):
         self.username = self.ui.usernameLabel.text()
         self.password = self.ui.passwordLabel.text()
-        self.conn = Database()
-        if not self.conn.checkUser(self.username, self.password):
-            raise DatabaseCredentialsError("Invalid username or password")
+
+        if len(self.username) == 0 or len(self.password) == 0:
+            QMessageBox.warning(self, "Error", "Please enter your username and password.")
+            return
         else:
-            print(cFormatter(f"Login Successful by {self.username}", color= Fore.RED))
+            self.conn = Database()
+            if not self.conn.checkUser(self.username, self.password):
+                raise DatabaseCredentialsError(cFormatter("Invalid username or password", color= Fore.RED))
+            else:
+                QMessageBox("Login Successful", "Welcome {}".format(self.username), parent= self, flags= Qt.WindowStaysOnTopHint)
+                print(cFormatter(f"Login Successful by {self.username}", color= Fore.RED))
+                return 
 
     def CloseUI(self):
         self.destroy()
@@ -63,8 +75,8 @@ class SplashScreen(QMainWindow):
         self.ui.setupUi(self)
 
         #* <----------  Hide the main window    ---------->
-        self.setWindowFlag(QtCore.Qt.FramelessWindowHint)
-        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        self.setWindowFlag(Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
         self.setWindowTitle("Master Panel")
 
         #* Drop Shadow Effect
@@ -75,7 +87,7 @@ class SplashScreen(QMainWindow):
             color= QColor(0,0,0,60)
             )
         )
-        self.timer = QtCore.QTimer()
+        self.timer = QTimer()
         self.timer.timeout.connect(self.progress)
         #* timer in MILISECONDS
         self.timer.start(35)
@@ -84,10 +96,10 @@ class SplashScreen(QMainWindow):
         self.ui.label_description.setText("<strong>WELCOME</strong> TO MY DATABASE")
 
         #* Change Splash Descriptions
-        QtCore.QTimer.singleShot(1000, lambda: self.ui.label_description.setText("<strong>SEARCHING FOR</strong> UPDATES"))
-        QtCore.QTimer.singleShot(2000, lambda: self.ui.label_description.setText("<strong>LOADING</strong> DATABASE"))
-        QtCore.QTimer.singleShot(2700, lambda: self.ui.label_description.setText("<strong>INITIALIZING</strong> CONFIGURATION"))
-        QtCore.QTimer.singleShot(3300, lambda: self.ui.label_description.setText("<strong>LOADING</strong> USER INTERFACE"))
+        QTimer.singleShot(1000, lambda: self.ui.label_description.setText("<strong>SEARCHING FOR</strong> UPDATES"))
+        QTimer.singleShot(2000, lambda: self.ui.label_description.setText("<strong>LOADING</strong> DATABASE"))
+        QTimer.singleShot(2700, lambda: self.ui.label_description.setText("<strong>INITIALIZING</strong> CONFIGURATION"))
+        QTimer.singleShot(3300, lambda: self.ui.label_description.setText("<strong>LOADING</strong> USER INTERFACE"))
 
         #* Show Main Window (which contains the widget)
         self.show()

@@ -1,7 +1,6 @@
 import sqlite3 as sql
 import time as t
 import os.path #* Para saber todo acerca de un archivo (tamaño, tipo, historial de cambios, etc.)
-import os
 
 #* import sqlalchemy para uso de db en API's o Webs
 
@@ -130,7 +129,7 @@ class User:
                     f.close()
                 return #cFormatter(f"El usuario {self.username} ha sido exportado a formato YAML correctamente.", color= Fore.GREEN)
             else:
-                raise User.UserError(cFormatter("Error al exportar el usuario", color= Fore.RED))
+                raise TypeError(cFormatter("Error al exportar el usuario", color= Fore.RED))
         
     def _AsignIdentifier(self) -> int:
         """
@@ -415,9 +414,9 @@ class Database:
         usernames = [u[1] for u in list(f for f in dump_data)]
         passwords = [u[4] for u in list(f for f in dump_data)]
 
-        if not username in usernames and not Checker.checkPassword([f for f in passwords], password):
+        if not username in usernames and not checkPassword([f for f in passwords], password):
             return False
-        elif not username in usernames and Checker.checkPassword([f for f in passwords], password):
+        elif not username in usernames and checkPassword([f for f in passwords], password):
             return False
         else:
             return True

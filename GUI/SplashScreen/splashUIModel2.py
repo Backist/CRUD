@@ -10,6 +10,11 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+try:
+    from mdinfo import __version__
+except ImportError as ie:
+    __version__ = "Not Found"
+    raise ie
 
 class SplashScreenUI(object):
     def setupUi(self, SplashScreen):
@@ -94,4 +99,14 @@ class SplashScreenUI(object):
         self.label_title.setText(_translate("SplashScreen", "<strong>CRUD</strong>"))
         self.label_description.setText(_translate("SplashScreen", "<strong>APP</strong> DESCRIPTION"))
         self.label_loading.setText(_translate("SplashScreen", "loading..."))
-        self.label_credits.setText(_translate("SplashScreen", "<strong>Created</strong>: Wanderson M. Pimenta"))
+        self.label_credits.setText(_translate("SplashScreen", "<strong>Version</strong>: {}".format(__version__)))
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    SplashScreen = QtWidgets.QMainWindow()
+    ui = SplashScreenUI()
+    ui.setupUi(SplashScreen)
+    SplashScreen.show()
+    sys.exit(app.exec_())
+    

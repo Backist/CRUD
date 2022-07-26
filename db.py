@@ -2,10 +2,13 @@ import sqlite3 as sql
 import time as t
 import os.path #* Para saber todo acerca de un archivo (tamaño, tipo, historial de cambios, etc.)
 import os
+
 #* import sqlalchemy para uso de db en API's o Webs
 
 from errors import *
-from checker import cFormatter, Checker
+from checker import *
+from utils import *
+
 from colorama import Fore, Back, Style #, init
 from asyncio import run
 from dataclasses import dataclass
@@ -255,6 +258,16 @@ class Database:
             )
 
     @property
+    def name(self):
+        if self.is_operative:
+            DbMetadata = self.conn.execute('PRAGMA database_list;').fetchall()        #* Obtenemos el nombre de la base de datos con PRAGMA database_list
+            DbPath = Path(DbMetadata[0][2])
+            Dbname = DbPath.name
+            return Dbname
+        else:
+            return cFormatter("La base de datos no esta operativa", color= Fore.RED)
+
+    @property
     def in_transaction(self):
         """
         Devuelve True si hay una transaccion en curso
@@ -395,6 +408,19 @@ class Database:
         TempDbWakeTime = round((t.time()-TempDbWakeTime)*1000, 2)
         print(cFormatter(f"Base de datos temporal inicializada en {TempDbWakeTime} ms", color=Fore.GREEN))
         return self.conn        
+    
+    def checkUser(self, username: str, password: str) -> bool:
+        temp_db = self._InitTempDb()
+        dump_data = temp_db.execute("SELECT * FROM users").fetchall()  
+        usernames = [u[1] for u in list(f for f in dump_data)]
+        passwords = [u[4] for u in list(f for f in dump_data)]
+
+        if not username in usernames and not Checker.checkPassword([f for f in passwords], password):
+            return False
+        elif not username in usernames and Checker.checkPassword([f for f in passwords], password):
+            return False
+        else:
+            return True
 
     def reseTables(self, table: str):
         """
@@ -521,8 +547,6 @@ class Database:
 
 if __name__ == "__main__":
 
-    #TODO: <--------- TESTING ---------->
-
     u = User("Alvaro", "Byalvaro54", "alvarodrumer54@gmail.com")
-    Database.CreateToken(u)
-    db = Database(u)
+    db = Database()
+    print(db.name)

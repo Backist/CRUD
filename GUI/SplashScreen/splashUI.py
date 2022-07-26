@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'splash_screenXBSmkq.ui'
+## Form generated from reading UI file 'splashUI.ui'
 ##
 ## Created by: Qt User Interface Compiler version 5.14.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-import sys
+from PyQt5 import QtCore
 from PyQt5.QtCore import (QCoreApplication, QMetaObject, QRect, Qt)
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import *
-import os
 
 class SplashScreenUI(object):
     def setupUi(self, SplashScreen):
@@ -104,3 +103,11 @@ class SplashScreenUI(object):
         self.label_credits.setText(QCoreApplication.translate("SplashScreen", u"<strong>Version</strong>: {}".format(None), None))
     # retranslateUi
 
+if __name__ == "__main__":
+    import sys
+    app = QApplication(sys.argv)
+    SplashScreen = QMainWindow()
+    ui = SplashScreenUI()
+    ui.setupUi(SplashScreen)
+    SplashScreen.show()
+    sys.exit(app.exec_())

@@ -14,10 +14,10 @@ To use this program there are some libraries that aren't be in the ``Python Stan
 To do this, simply type in the shell:
 - **Windows (NT)**:
   - ``pip install -r requeriments.txt`` to install all dependencies in global context
-  - ``pip install -r requeriments.txt --user`` to install the program dependencies in global context.
+  - ``pip install -r requeriments.txt --user`` to install the program dependencies in user context.
 - **Linux (POSIX)**:
   - ``pip3 install -r requeriments.txt`` to install all dependencies in global context
-  - ``pip3 install -r requeriments.txt --user`` to install the program dependencies in global context.
+  - ``pip3 install -r requeriments.txt --user`` to install the program dependencies in user context.
 
 #### External Resources:
 [==> Standard Library <==](https://docs.python.org/3/library/)

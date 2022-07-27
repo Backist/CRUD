@@ -5,11 +5,19 @@ import os.path
 import time as t
 import mmap
 
+from os import system
 from chardet import detect
 from pathlib import Path
 from colorama import Fore, Back, Style
 from random import choice
 from werkzeug.security import check_password_hash
+
+
+def cls():
+    if os.name == "nt":
+        _ = system("cls")
+    else:
+        _ = system("clear")
 
 
 def Logger(level, text: str, logger_preffix: str = None) -> str:

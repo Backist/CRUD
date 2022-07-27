@@ -11,7 +11,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 try:
-    from metaData import __version__
+    import metadata
 except ImportError as ie:
     __version__ = "Not Found"
     raise ie
@@ -99,7 +99,7 @@ class SplashScreenUI(object):
         self.label_title.setText(_translate("SplashScreen", "<strong>CRUD</strong>"))
         self.label_description.setText(_translate("SplashScreen", "<strong>APP</strong> DESCRIPTION"))
         self.label_loading.setText(_translate("SplashScreen", "loading..."))
-        self.label_credits.setText(_translate("SplashScreen", "<strong>Version</strong>: {}".format(__version__)))
+        self.label_credits.setText(_translate("SplashScreen", "<strong>Version</strong>: {}".format(metadata)))
 
 if __name__ == "__main__":
     import sys

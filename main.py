@@ -1,17 +1,42 @@
 """Main program"""
 
 import sys
-from colorama import Fore
+import typing
 
-from PyQt5.QtGui import (
-    QBrush, QColor, QConicalGradient, QCursor, QFont, QFontDatabase, QIcon, QKeySequence, 
-    QLinearGradient, QPalette, QPainter, QPixmap, QRadialGradient
-)
-from PyQt5.QtCore import (QTimer, Qt, QCoreApplication, QPropertyAnimation, QPoint, QSize, QUrl,
-    QDate, QDateTime, QMetaObject, QObject, QPoint, QRect, QSize, QTime, QUrl, Qt, QEvent
-)
-from PyQt5.QtWidgets import *
+from os import system
+from metadata import pyver, opsys
 
+try:
+    #import psutil
+    # import keyboard
+    from colorama import Fore
+
+    from PyQt5.QtGui import (
+        QBrush, QColor, QConicalGradient, QCursor, QFont, QFontDatabase, QIcon, QKeySequence, 
+        QLinearGradient, QPalette, QPainter, QPixmap, QRadialGradient, QKeyEvent
+    )
+    from PyQt5.QtCore import (QTimer, Qt, QCoreApplication, QPropertyAnimation, QPoint, QSize, QUrl,
+        QDate, QDateTime, QMetaObject, QObject, QPoint, QRect, QSize, QTime, QUrl, Qt, QEvent
+    )
+    from PyQt5.QtWidgets import *
+
+except ImportError:
+
+    print("Problem Found: Please install all the dependencies")
+    getDepens = input("Do you want to install all the dependencies? (y/n) ")
+    if getDepens.lower() == "y" or getDepens.lower() == "yes":
+        if opsys.upper() == "WINDOWS":
+            system("pip install colorama")
+            system("pip install psutil")
+            system("pip install PyQt5")
+            system("pip install keyboard")
+        else:
+            system("pip3 install colorama")
+            system("pip3 install psutil")
+            system("pip3 install PyQt5")
+            system("pip3 install keyboard")
+    else:
+        sys.exit("Make sure you have insatlled all the dependencies to run the program")
 
 from errors import *
 from utils import *
@@ -23,7 +48,7 @@ from db import Database
 
 #TODO: Globals and constants
 counter = 0
-CRUD_ICON = 'GUI\Icons\CRUDIcon.png'
+CRUD_PATH = 'GUI\Icons\CRUDIcon.png'
 
 
 # class RegisterWindow(QMainWindow):
@@ -45,6 +70,8 @@ class LoginWindow(QMainWindow):
         self.createFuncs()
     
     def createFuncs(self):
+        self.ui.loginButton.setCheckable(True)
+        self.ui.loginButton.toggled.connect(self.checkCredents)
         self.ui.loginButton.clicked.connect(self.checkCredents)
         self.ui.exitButton.clicked.connect(self.CloseUI)
 
@@ -53,7 +80,9 @@ class LoginWindow(QMainWindow):
         self.password = self.ui.passwordLabel.text()
 
         if len(self.username) == 0 or len(self.password) == 0:
-            QMessageBox.warning(self, "Error", "Please enter your username and password.")
+            self.msgbx = QMessageBox()
+            self.msgbx.setModal(True)
+            self.msgbx.about(self, "Error", "Please fill in all fields")
             return
         else:
             self.conn = Database()
@@ -122,9 +151,21 @@ class SplashScreen(QMainWindow):
         else:
             #* Increase counter
             counter += 1
-        
+ 
 
 if __name__ == "__main__":
+
+    #TODO: <----------  Check OS Cofing and vers    ---------->
+    
+    if opsys is not None and opsys == "Windows" and pyver <= "3.10.2":
+        print(cFormatter("Ejecuting on Windows. Your Python version must be greater than 3.10.2!", color= Fore.YELLOW))
+        sys.exit(1)
+    elif opsys is not None and opsys == "Linux" and pyver <= "3.10.2":
+        print(cFormatter("Ejecuting on Linux. Your Python version must be greater than 3.10.2!", color= Fore.YELLOW))
+        sys.exit(1)
+    else:
+        pass
+
     app = QApplication(sys.argv)
     window = SplashScreen()
     sys.exit(app.exec_())

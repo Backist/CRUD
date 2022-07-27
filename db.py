@@ -30,13 +30,6 @@ __all__: list[str] = ["User", "cFormatter", "Database"]
 #TODO: Solo se importaran esos modulos o clases pero los metodos o funciones privados no seran importados
 
 
-def cls():
-    if os.name == "nt":
-        _ = os.system("cls")
-    else:
-        _ = os.system("clear")
-
-
 @dataclass(init=True)
 class User:
     """Dataclase para instanciar usuarios para poder acceder a la base de datos.\n

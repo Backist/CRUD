@@ -42,7 +42,9 @@ class User:
         self.token: str = None
         self._ids_range: list[int] | tuple[int] = ids_range
 
-        if len(password) < 8 or len(list(filter(lambda char: str(char) in password, list(range(0, 9+1))))) == 0:
+        if len(password) < 8 or not list(
+            filter(lambda char: str(char) in password, list(range(0, 9 + 1)))
+        ):
             raise User.UserError(cFormatter("La contraseña debe tener al menos 8 caracteres y contener al menos un número.", color= Fore.RED))
         else:
             self.password: str = password
@@ -50,21 +52,19 @@ class User:
         self.secret_password = "*" * len(self.password[:-4])+self.password[-4:]  #* Si se printea el objeto, se muestran los cuatro ultimos caracteres de la contraseña
 
     def encryptPassword(self, mode: str = "sha1"):
-            encryp = generate_password_hash(self.password, mode, salt_length= 6)    #* 6 bytes de salt
-            return encryp
+        return generate_password_hash(self.password, mode, salt_length= 6)
 
     def _InternalDict(self) -> dict:
         """
         Crea un diccionario con los datos de un usuario para ser almacenado en la base de datos.
         """
-        userDict = {
+        return {
             "username": self.username,
             "email": self.email,
             "password": (self.secret_password, (self.encryptPassword())),
             "UId": self.UId,
-            "created_at": self.created_at
+            "created_at": self.created_at,
         }
-        return userDict
 
     def exportUser(self, exporTo: str = "JSON") -> None:
         """
@@ -72,57 +72,61 @@ class User:
         """
         valid_fmt = ["JSON", "CSV", "TXT", "XML", "YAML"]
 
-        if not exporTo.upper() in valid_fmt:
-            raise User.UserError(cFormatter(f"El formato de exportacion indicado no es valido. Formatos validos: {[f for f in valid_fmt]}", color= Fore.RED))
-        else:
-            tagDict = {"DumpMethod": exporTo.upper(), "CreatedAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+        if exporTo.upper() not in valid_fmt:
+            raise User.UserError(
+                cFormatter(
+                    f"El formato de exportacion indicado no es valido. Formatos validos: {list(valid_fmt)}",
+                    color=Fore.RED,
+                )
+            )
+        tagDict = {"DumpMethod": exporTo.upper(), "CreatedAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 
-            if exporTo.upper() == "JSON" or exporTo == "TXT":
-                with open(f"{self.username}.json", "w") as f:
-                    f.write(f"{dumps(tagDict, indent= 4)},\n")
-                    f.write(str(self))
-                    f.close()
-                return #cFormatter(f"El usuario {self.username} ha sido exportado a formato JSON correctamente.", color= Fore.GREEN)
-            elif exporTo.upper() == "CSV":
-                try:
-                    with open(f"{self.username}.csv", 'w') as csvfile:
-                        for k, v in tagDict.items():
-                            csvfile.write(f"{k},{v}\n")
-                        csvfile.write("\n")
-                        for key in self._InternalDict().keys():
-                            csvfile.write(f"{key},{self._InternalDict()[key]}\n")
-                        csvfile.close()
-                    return #cFormatter(f"El usuario {self.username} ha sido exportado a formato CSV correctamente.", color= Fore.GREEN)
-                except IOError as ioe:
-                    print(f"I/O error during export user to CSV: {ioe}")
-                    return
-            elif exporTo.upper() == "XML":
-                # with open(f"{self.username}.xml", "w+", newline= '') as csvFile:
-                #     csvWriter = csv.writer(csvFile, delimiter = ' ')
-                #     for elem in self._InternalDict():
-                #         csvWriter.writerow([elem.strip()])
-                with open(f"{self.username}.xml", "w") as f:
-                    f.write(f"{dumps(tagDict, indent= 4)}\n")
-                    f.write(str(self))
-                    f.close()
-                return #cFormatter(f"El usuario {self.username} ha sido exportado a formato XML correctamente.", color= Fore.GREEN)
-            elif exporTo.upper() == "YAML":
-                with open(f"{self.username}.yaml", "w") as f:
-                    yaml.dump(tagDict, f)
-                    yaml.dump(
-                        self._InternalDict(), 
-                        f,
-                        allow_unicode=True, 
-                        default_flow_style=False, 
-                        encoding= 'utf-8', 
-                        sort_keys=True, 
-                        explicit_start= True, 
-                        explicit_end= True,
-                    )
-                    f.close()
-                return #cFormatter(f"El usuario {self.username} ha sido exportado a formato YAML correctamente.", color= Fore.GREEN)
-            else:
-                raise TypeError(cFormatter("Error al exportar el usuario", color= Fore.RED))
+        if exporTo.upper() == "JSON" or exporTo == "TXT":
+            with open(f"{self.username}.json", "w") as f:
+                f.write(f"{dumps(tagDict, indent= 4)},\n")
+                f.write(str(self))
+                f.close()
+            return #cFormatter(f"El usuario {self.username} ha sido exportado a formato JSON correctamente.", color= Fore.GREEN)
+        elif exporTo.upper() == "CSV":
+            try:
+                with open(f"{self.username}.csv", 'w') as csvfile:
+                    for k, v in tagDict.items():
+                        csvfile.write(f"{k},{v}\n")
+                    csvfile.write("\n")
+                    for key in self._InternalDict().keys():
+                        csvfile.write(f"{key},{self._InternalDict()[key]}\n")
+                    csvfile.close()
+                return #cFormatter(f"El usuario {self.username} ha sido exportado a formato CSV correctamente.", color= Fore.GREEN)
+            except IOError as ioe:
+                print(f"I/O error during export user to CSV: {ioe}")
+                return
+        elif exporTo.upper() == "XML":
+            # with open(f"{self.username}.xml", "w+", newline= '') as csvFile:
+            #     csvWriter = csv.writer(csvFile, delimiter = ' ')
+            #     for elem in self._InternalDict():
+            #         csvWriter.writerow([elem.strip()])
+            with open(f"{self.username}.xml", "w") as f:
+                f.write(f"{dumps(tagDict, indent= 4)}\n")
+                f.write(str(self))
+                f.close()
+            return #cFormatter(f"El usuario {self.username} ha sido exportado a formato XML correctamente.", color= Fore.GREEN)
+        elif exporTo.upper() == "YAML":
+            with open(f"{self.username}.yaml", "w") as f:
+                yaml.dump(tagDict, f)
+                yaml.dump(
+                    self._InternalDict(), 
+                    f,
+                    allow_unicode=True, 
+                    default_flow_style=False, 
+                    encoding= 'utf-8', 
+                    sort_keys=True, 
+                    explicit_start= True, 
+                    explicit_end= True,
+                )
+                f.close()
+            return #cFormatter(f"El usuario {self.username} ha sido exportado a formato YAML correctamente.", color= Fore.GREEN)
+        else:
+            raise TypeError(cFormatter("Error al exportar el usuario", color= Fore.RED))
         
     def _AsignIdentifier(self) -> int:
         """
@@ -199,26 +203,22 @@ class _Clock:
             print(self._calc_passed_time_format(), end= '\r')
         
     def pauseTimer(self):
-        if self.active:
-            self._initTime = datetime.now()
-            self._active = False
-        else:
+        if not self.active:
             return print(self.ClockErrorMsg)
+        self._initTime = datetime.now()
+        self._active = False
 
     def activeTimer(self):
         """Activa el cronometro si esta pausado.\nTambien lo hace si esta parado pero es mejor utilizar el metodo ``.timer()``"""
-        if self.active:
-            pass
-        else:
+        if not self.active:
             self._active = True
             return self._calc_passed_time_format()
 
     def resetTimer(self):
-        if self._active:
-            self._initTime = datetime.now()
-            print(cFormatter("El cronometro se ha reseteado", color= Fore.GREEN))
-        else:
+        if not self._active:
             return print(self.ClockErrorMsg)
+        self._initTime = datetime.now()
+        print(cFormatter("El cronometro se ha reseteado", color= Fore.GREEN))
 
 
 class Database:
@@ -254,8 +254,7 @@ class Database:
         if self.is_operative:
             DbMetadata = self.conn.execute('PRAGMA database_list;').fetchall()        #* Obtenemos el nombre de la base de datos con PRAGMA database_list
             DbPath = Path(DbMetadata[0][2])
-            Dbname = DbPath.name
-            return Dbname
+            return DbPath.name
         else:
             return cFormatter("La base de datos no esta operativa", color= Fore.RED)
 
@@ -290,20 +289,18 @@ class Database:
         minus = "abcdefghijklmñopqrstuwxyz"
         mayus = minus.upper()
         symbols = "@#/-*&'=€"
-        numbers = "0123456789"
-        base = (minus + numbers + mayus + symbols)
+        base = f"{minus}0123456789{mayus}{symbols}"
 
         extract = sample(base, 16)
         token = "8/x::"+"".join(extract)
 
-        if not token in used_tokens:
-            temp_db.execute(f"INSERT INTO AUC (Tokens) VALUES ('{token}')")     #! Muy importante las comillas a pesar de hacer f-string
-            temp_db.commit()
-            temp_db.close()
-            user.token = token
-            return token
-        else:
+        if token in used_tokens:
             return cls.CreateToken(user)
+        temp_db.execute(f"INSERT INTO AUC (Tokens) VALUES ('{token}')")     #! Muy importante las comillas a pesar de hacer f-string
+        temp_db.commit()
+        temp_db.close()
+        user.token = token
+        return token
 
     def _LogWritter(
         self, 
@@ -327,8 +324,13 @@ class Database:
 
         valid_levels = ["INFO", "WARNING", "ERROR", "CRITICAL", "SPECIAL_EVENT"]
 
-        if not level.upper() in valid_levels:
-            print(cFormatter(f"El nivel de importancia no es valido. Niveles de importancia admitidos: {[l for l in valid_levels]}", color= Fore.RED))
+        if level.upper() not in valid_levels:
+            print(
+                cFormatter(
+                    f"El nivel de importancia no es valido. Niveles de importancia admitidos: {list(valid_levels)}",
+                    color=Fore.RED,
+                )
+            )
             return
         else:
             for l in valid_levels:
@@ -392,24 +394,24 @@ class Database:
         """)                        #TODO: AUC --> Already Used Credentials              
         self.conn.commit()
 
-        if len(self.c.execute(f"SELECT * from users").fetchall()) >= max_elems:
+        if len(self.c.execute("SELECT * from users").fetchall()) >= max_elems:
             self.delAct()
             print(cFormatter("Eliminados 500 elementos para limpieza de la base de datos temporal"))
-        else:
-            pass
         TempDbWakeTime = round((t.time()-TempDbWakeTime)*1000, 2)
         print(cFormatter(f"Base de datos temporal inicializada en {TempDbWakeTime} ms", color=Fore.GREEN))
         return self.conn        
     
     def checkUser(self, username: str, password: str) -> bool:
         temp_db = self._InitTempDb()
-        dump_data = temp_db.execute("SELECT * FROM users").fetchall()  
-        usernames = [u[1] for u in list(f for f in dump_data)]
-        passwords = [u[4] for u in list(f for f in dump_data)]
+        dump_data = temp_db.execute("SELECT * FROM users").fetchall()
+        usernames = [u[1] for u in list(dump_data)]
+        passwords = [u[4] for u in list(dump_data)]
 
-        if not username in usernames and not checkPassword([f for f in passwords], password):
+        if username not in usernames and not checkPassword(
+            list(passwords), password
+        ):
             return False
-        elif not username in usernames and checkPassword([f for f in passwords], password):
+        elif username not in usernames and checkPassword(list(passwords), password):
             return False
         else:
             return True
@@ -426,10 +428,10 @@ class Database:
         Si no se pasa un elemento a eliminar, el metodo borrará todos los elementos de la tabla users (Excepto que se proporcione una)"""
         if elem:
             self.c.execute(f"DELETE FROM {table} WHERE {elem} =")
-            self.conn.commit()
         else:
             self.c.execute(f"DELETE FROM {table}")
-            self.conn.commit()
+
+        self.conn.commit()
 
     def DbDiskSize(self):
         return f"{round(os.path.getsize(Path('PUC.db'))/1000, 2)} KB"
@@ -438,26 +440,39 @@ class Database:
     def CheckEntryDataEnabled(self) -> bool:
         
         temp_db = self._InitTempDb()
-        dumped_data = temp_db.execute("SELECT * FROM users").fetchall()   
-        flist = [f for f in dumped_data]
+        dumped_data = temp_db.execute("SELECT * FROM users").fetchall()
+        flist = list(dumped_data)
         ids = [i[0] for i in flist]
         usernames = [u[1] for u in flist]
         tokens = [t[5] for t in flist]       
 
-        if not self.user == "Invitado":
+        if self.user != "Invitado":
             if self.userToken is not None:
                 if self.userToken in tokens:
-                    self._LogWritter(f"Se ha habilitado la entrada de datos", self.user.username, special_info= [self.user.token])
+                    self._LogWritter(
+                        "Se ha habilitado la entrada de datos",
+                        self.user.username,
+                        special_info=[self.user.token],
+                    )
                     self.EntryDataEnabled = True
                     return True
-                elif self.userToken not in tokens and self.user.UId in ids:
-                    print(cFormatter(f"Se ha encontrado un usuario activo con el mismo nombre de usuario pero con un token diferente.Por favor, compruebe su token y si es necesario cree una de nuevo", color= Fore.YELLOW))
+                elif self.user.UId in ids:
+                    print(
+                        cFormatter(
+                            "Se ha encontrado un usuario activo con el mismo nombre de usuario pero con un token diferente.Por favor, compruebe su token y si es necesario cree una de nuevo",
+                            color=Fore.YELLOW,
+                        )
+                    )
                     self.EntryDataEnabled = False
                     return False
                 else:
                     temp_db.execute("INSERT INTO users (UId, Username, Email, Password, Token, Created_at) VALUES (?, ?, ?, ?, ?, ?)", (self.user.UId ,self.user.username, self.user.email, self.user.encryptPassword(mode= "sha1"), self.user.token, self.user.created_at))
                     print(cFormatter(f"Se ha añadido al usuario {self.user.username} con ID [{self.user.UId}] a usuarios permitidos", color= Fore.GREEN))
-                    self._LogWritter(f"Se ha habilitado la entrada de datos", self.user.username, special_info= [self.user.token])
+                    self._LogWritter(
+                        "Se ha habilitado la entrada de datos",
+                        self.user.username,
+                        special_info=[self.user.token],
+                    )
                     temp_db.commit()
                     temp_db.close()
                     self.EntryDataEnabled = True
@@ -468,7 +483,12 @@ class Database:
                 return False
         else:
             self.EntryDataEnabled = False
-            print(cFormatter(f"El usuario no esta en usuarios activos y solo puede acceso a ver la base de datos, accedera como INVITADO", color=Fore.YELLOW))
+            print(
+                cFormatter(
+                    "El usuario no esta en usuarios activos y solo puede acceso a ver la base de datos, accedera como INVITADO",
+                    color=Fore.YELLOW,
+                )
+            )
             return False
 
 

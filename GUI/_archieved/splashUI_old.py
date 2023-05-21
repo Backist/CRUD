@@ -100,7 +100,11 @@ class SplashScreenUI(object):
         self.label_title.setText(QCoreApplication.translate("SplashScreen", u"<strong>CRUD</strong>", None))
         self.label_description.setText(QCoreApplication.translate("SplashScreen", u"<strong>APP</strong> DESCRIPTION", None))
         self.label_loading.setText(QCoreApplication.translate("SplashScreen", u"loading...", None))
-        self.label_credits.setText(QCoreApplication.translate("SplashScreen", u"<strong>Version</strong>: {}".format(None), None))
+        self.label_credits.setText(
+            QCoreApplication.translate(
+                "SplashScreen", '<strong>Version</strong>: None', None
+            )
+        )
     # retranslateUi
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 """Main program"""
 
+
 import sys
 import typing
 
@@ -24,7 +25,7 @@ except ImportError:
 
     print("Problem Found: Please install all the dependencies")
     getDepens = input("Do you want to install all the dependencies? (y/n) ")
-    if getDepens.lower() == "y" or getDepens.lower() == "yes":
+    if getDepens.lower() in ["y", "yes"]:
         if opsys.upper() == "WINDOWS":
             system("pip install colorama")
             system("pip install psutil")
@@ -83,15 +84,18 @@ class LoginWindow(QMainWindow):
             self.msgbx = QMessageBox()
             self.msgbx.setModal(True)
             self.msgbx.about(self, "Error", "Please fill in all fields")
-            return
         else:
             self.conn = Database()
             if not self.conn.checkUser(self.username, self.password):
                 raise DatabaseCredentialsError(cFormatter("Invalid username or password", color= Fore.RED))
-            else:
-                QMessageBox("Login Successful", "Welcome {}".format(self.username), parent= self, flags= Qt.WindowStaysOnTopHint)
-                print(cFormatter(f"Login Successful by {self.username}", color= Fore.RED))
-                return 
+            QMessageBox(
+                "Login Successful",
+                f"Welcome {self.username}",
+                parent=self,
+                flags=Qt.WindowStaysOnTopHint,
+            )
+            print(cFormatter(f"Login Successful by {self.username}", color= Fore.RED))
+        return 
 
     def CloseUI(self):
         self.destroy()
@@ -156,16 +160,13 @@ class SplashScreen(QMainWindow):
 if __name__ == "__main__":
 
     #TODO: <----------  Check OS Cofing and vers    ---------->
-    
+
     if opsys is not None and opsys == "Windows" and pyver <= "3.10.2":
         print(cFormatter("Ejecuting on Windows. Your Python version must be greater than 3.10.2!", color= Fore.YELLOW))
         sys.exit(1)
     elif opsys is not None and opsys == "Linux" and pyver <= "3.10.2":
         print(cFormatter("Ejecuting on Linux. Your Python version must be greater than 3.10.2!", color= Fore.YELLOW))
         sys.exit(1)
-    else:
-        pass
-
     app = QApplication(sys.argv)
     window = SplashScreen()
     sys.exit(app.exec_())

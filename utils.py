@@ -14,10 +14,7 @@ from werkzeug.security import check_password_hash
 
 
 def cls():
-    if os.name == "nt":
-        _ = system("cls")
-    else:
-        _ = system("clear")
+    _ = system("cls") if os.name == "nt" else system("clear")
 
 
 def Logger(level, text: str, logger_preffix: str = None) -> str:
@@ -63,43 +60,44 @@ def cFormatter(
     b = [Back.BLACK, Back.RED, Back.BLUE, Back.CYAN, Back.GREEN, Back.MAGENTA, Back.YELLOW, Back.WHITE, Back.LIGHTBLACK_EX, Back.LIGHTBLUE_EX, 
     Back.LIGHTCYAN_EX, Back.LIGHTGREEN_EX, Back.LIGHTMAGENTA_EX, Back.LIGHTYELLOW_EX, Back.LIGHTWHITE_EX]
 
-    if (color is not None and not color in c) or (style is not None and not style in s) or (background is not None and not background in b):
-        return ValueError(cFormatter(f"Color o estilo o fondo no valido", color= Fore.RED))
+    if (
+        color is not None
+        and color not in c
+        or style is not None
+        and style not in s
+        or background is not None
+        and background not in b
+    ):
+        return ValueError(
+            cFormatter("Color o estilo o fondo no valido", color=Fore.RED)
+        )
 
-    else:
+    if iter_colors:
+        if [x for x in iter_colors if x not in c]:
+            return TypeError(cFormatter("No se ha definido una lista de colores con los que iterar o algun color no es valido", color= Fore.RED))
+        letters = [f"{choice(iter_colors)}{chars}{Fore.RESET}" for chars in string]
+        return "".join(letters)
 
-        if iter_colors:
-            if len(iter_colors) == 0 or [x for x in iter_colors if x not in c]:
-                return TypeError(cFormatter("No se ha definido una lista de colores con los que iterar o algun color no es valido", color= Fore.RED))
-            else: 
-                letters = []
-                for chars in string:
-                    letters.append(f"{choice(iter_colors)}{chars}{Fore.RESET}")
-                return "".join(letters)
+    elif random:
+        rcolor = choice(c)
+        rstyle = choice(s)
+        rback = choice(b)
+        return f"{rcolor}{rstyle}{rback}{string}{Style.RESET_ALL}{Fore.RESET}{Back.RESET}"
 
-        elif random:
-            rcolor = choice(c)
-            rstyle = choice(s)
-            rback = choice(b)
-            return f"{rcolor}{rstyle}{rback}{string}{Style.RESET_ALL}{Fore.RESET}{Back.RESET}"
-
-        elif color:
-            if background:
-                return f"{color}{background}{string}{Fore.RESET}{Back.RESET}"
-            elif style:
-                return f"{color}{style}{string}{Fore.RESET}{Style.RESET_ALL}"
-            else:
-                return f"{color}{string}{Fore.RESET}"
+    elif color:
+        if background:
+            return f"{color}{background}{string}{Fore.RESET}{Back.RESET}"
+        elif style:
+            return f"{color}{style}{string}{Fore.RESET}{Style.RESET_ALL}"
+        else:
+            return f"{color}{string}{Fore.RESET}"
 
 
 def ValidatePath(path: Path | str) -> bool:
     """Retorna un booleano dependiendo de si el Path o el Path de la string existe o es un archivo"""
     if isinstance(path, str):
         fpath = Path(path)
-        if not fpath.exists() or not fpath.is_file():
-            return False
-        else:
-            return True
+        return fpath.exists() and fpath.is_file()
     elif isinstance(path, Path) and not path.exists() or not path.is_file():
         return False
     else:
@@ -112,25 +110,22 @@ def ReadLines(StrOrPath: Path | str) -> list[int]:
     ``list[1]`` -> Total lines without White lines\n
     ``list[2]`` -> White lines
     """
-    if ValidatePath(StrOrPath):
-        with open(StrOrPath if isinstance(StrOrPath, Path) else Path(StrOrPath), "r+b") as log:
-            if os.path.getsize(log.name) == 0:
-                return Logger("w", "El archivo esta vacio")
-            else:
-                pass
-            mm = mmap.mmap(log.fileno(), 0, access=mmap.ACCESS_READ)
-            total_lines = 0
-            white_lines = 0
-
-            for line in iter(mm.readline, b""):     #* b"" para leer en binario. El salto de linea == '\r\n'
-                if line == b"\r\n":         
-                    white_lines += 1
-                else:
-                    total_lines += 1
-            log.close()                    
-        return [total_lines+white_lines, total_lines, white_lines]
-    else:
+    if not ValidatePath(StrOrPath):
         return ValidatePath(StrOrPath)
+    with open(StrOrPath if isinstance(StrOrPath, Path) else Path(StrOrPath), "r+b") as log:
+        if os.path.getsize(log.name) == 0:
+            return Logger("w", "El archivo esta vacio")
+        mm = mmap.mmap(log.fileno(), 0, access=mmap.ACCESS_READ)
+        total_lines = 0
+        white_lines = 0
+
+        for line in iter(mm.readline, b""):     #* b"" para leer en binario. El salto de linea == '\r\n'
+            if line == b"\r\n":         
+                white_lines += 1
+            else:
+                total_lines += 1
+        log.close()
+    return [total_lines+white_lines, total_lines, white_lines]
 
 
 def getSize(filePathOrStr: Path | str):
@@ -141,44 +136,44 @@ def getSize(filePathOrStr: Path | str):
 
 
 def getInfo(filePathOrStr: Path | str) -> dict:
-    TIME_FMT = "%Y-%m-%d %H:%M:%S"
-    if ValidatePath(filePathOrStr):
-        finfo = {}
-        afile = t.strftime(TIME_FMT, t.localtime(os.path.getatime(filePathOrStr)))
-        mfile = t.strftime(TIME_FMT, t.localtime(os.path.getmtime(filePathOrStr)))
-        cfile = t.strftime(TIME_FMT, t.localtime(os.path.getctime(filePathOrStr)))    #* Devuelve la hora de creacion del archivo
-        sfile = getSize(filePathOrStr)
-        ext = os.path.splitext(filePathOrStr)[1]   #* Divide la ruta en dos, donde el segundo elemento es la ext.
-        with open(filePathOrStr, "r+") as file:
-            Tobytes = Path(filePathOrStr).read_bytes() if not isinstance(filePathOrStr, Path) else filePathOrStr.read_bytes()
-            enc = file.encoding
-        finfo["Name"] = file.name
-        finfo["Absolute path"] = Path(filePathOrStr).absolute().as_posix() if not isinstance(filePathOrStr, Path) else filePathOrStr.absolute().as_posix()
-        finfo["Home directory"] = Path(filePathOrStr).home().as_posix() if not isinstance(filePathOrStr, Path) else filePathOrStr.home().as_posix()
-        finfo["Last access"] = afile
-        finfo["Last modification"] = mfile
-        finfo["Creation data"] = cfile
-        finfo["File size"] = f"{sfile} KB"
-        finfo["Total lines"] = ReadLines(filePathOrStr)[1]
-        finfo["Extension"] = ext
-        finfo["Language"] = detect(Tobytes).get("language") if detect(Tobytes).get("language") else "Unknown"
-        finfo["Encoding"] = enc
-
-        for k in finfo.keys():
-            print(f"{cFormatter(k, color= Fore.LIGHTYELLOW_EX)}: {cFormatter(finfo[k] ,color= Fore.LIGHTWHITE_EX)}")
-    else:
+    if not ValidatePath(filePathOrStr):
         return ValidatePath(filePathOrStr)
+    TIME_FMT = "%Y-%m-%d %H:%M:%S"
+    afile = t.strftime(TIME_FMT, t.localtime(os.path.getatime(filePathOrStr)))
+    mfile = t.strftime(TIME_FMT, t.localtime(os.path.getmtime(filePathOrStr)))
+    cfile = t.strftime(TIME_FMT, t.localtime(os.path.getctime(filePathOrStr)))    #* Devuelve la hora de creacion del archivo
+    sfile = getSize(filePathOrStr)
+    ext = os.path.splitext(filePathOrStr)[1]   #* Divide la ruta en dos, donde el segundo elemento es la ext.
+    with open(filePathOrStr, "r+") as file:
+        Tobytes = Path(filePathOrStr).read_bytes() if not isinstance(filePathOrStr, Path) else filePathOrStr.read_bytes()
+        enc = file.encoding
+    finfo = {
+        "Name": file.name,
+        "Absolute path": Path(filePathOrStr).absolute().as_posix()
+        if not isinstance(filePathOrStr, Path)
+        else filePathOrStr.absolute().as_posix(),
+    }
+    finfo["Home directory"] = Path(filePathOrStr).home().as_posix() if not isinstance(filePathOrStr, Path) else filePathOrStr.home().as_posix()
+    finfo["Last access"] = afile
+    finfo["Last modification"] = mfile
+    finfo["Creation data"] = cfile
+    finfo["File size"] = f"{sfile} KB"
+    finfo["Total lines"] = ReadLines(filePathOrStr)[1]
+    finfo["Extension"] = ext
+    finfo["Language"] = detect(Tobytes).get("language") if detect(Tobytes).get("language") else "Unknown"
+    finfo["Encoding"] = enc
+
+    for k, v in finfo.items():
+        print(
+            f"{cFormatter(k, color=Fore.LIGHTYELLOW_EX)}: {cFormatter(v, color=Fore.LIGHTWHITE_EX)}"
+        )
 
 
 def checkPassword(hash_password: str | list, primitive_password: str) -> bool:
     if not isinstance(hash_password, list) and not hash_password.startswith("pbkdf2:"):
         raise TypeError("La contraseña no esta encriptada o no es un hash de contraseña.")
-    else:
-        if isinstance(hash_password, list):
-            for p in hash_password:
-                if check_password_hash(p, primitive_password):
-                    return True
-                else:
-                    pass
-        else:
-            return check_password_hash(hash_password, primitive_password)
+    if not isinstance(hash_password, list):
+        return check_password_hash(hash_password, primitive_password)
+    for p in hash_password:
+        if check_password_hash(p, primitive_password):
+            return True

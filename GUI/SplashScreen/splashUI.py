@@ -99,7 +99,9 @@ class SplashScreenUI(object):
         self.label_title.setText(_translate("SplashScreen", "<strong>CRUD</strong>"))
         self.label_description.setText(_translate("SplashScreen", "<strong>APP</strong> DESCRIPTION"))
         self.label_loading.setText(_translate("SplashScreen", "loading..."))
-        self.label_credits.setText(_translate("SplashScreen", "<strong>Version</strong>: {}".format(metadata)))
+        self.label_credits.setText(
+            _translate("SplashScreen", f"<strong>Version</strong>: {metadata}")
+        )
 
 if __name__ == "__main__":
     import sys
